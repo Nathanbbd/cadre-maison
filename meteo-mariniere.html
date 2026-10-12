@@ -81,7 +81,7 @@
     </div>
   </div>
   <div id="hours"></div>
-  <div id="foot">Météo : Open-Meteo (modèles Météo-France), vent en nœuds.<span id="src"></span></div>
+  <div id="foot">Météo : Open-Meteo (modèles Météo-France), vent en km/h.<span id="src"></span></div>
 </div>
 
 <script>
@@ -96,7 +96,7 @@ var FORECAST_URL = "https://api.open-meteo.com/v1/forecast?latitude=" + LAT + "&
   "&current=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m" +
   "&minutely_15=precipitation&forecast_minutely_15=12" +
   "&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m" +
-  "&models=meteofrance_seamless&wind_speed_unit=kn&timezone=Europe%2FParis&forecast_days=2";
+  "&models=meteofrance_seamless&timezone=Europe%2FParis&forecast_days=2";
 var MARINE_URL = "https://marine-api.open-meteo.com/v1/marine?latitude=" + SEA_LAT + "&longitude=" + SEA_LON +
   "&current=wave_height,wave_direction,wave_period,sea_surface_temperature&timezone=Europe%2FParis";
 var REFRESH_MIN = 10;
@@ -131,14 +131,14 @@ function mock() {
   }
   var hourly = { time: [], wind_speed_10m: [], wind_direction_10m: [], wind_gusts_10m: [] };
   for (var h = 0; h < 30; h++) {
-    var th = new Date(base.getTime() + h * 3600000), s = 14 + 6 * Math.sin(h / 4);
+    var th = new Date(base.getTime() + h * 3600000), s = 26 + 11 * Math.sin(h / 4);
     hourly.time.push(th.getFullYear() + "-" + pad(th.getMonth() + 1) + "-" + pad(th.getDate()) + "T" + hhmm(th));
     hourly.wind_speed_10m.push(Math.round(s));
     hourly.wind_gusts_10m.push(Math.round(s * 1.45));
     hourly.wind_direction_10m.push(Math.round(300 + h * 3) % 360);
   }
   return {
-    forecast: { current: { temperature_2m: 14.2, wind_speed_10m: 17, wind_direction_10m: 305, wind_gusts_10m: 26 },
+    forecast: { current: { temperature_2m: 14.2, wind_speed_10m: 31, wind_direction_10m: 305, wind_gusts_10m: 48 },
                 minutely_15: m15, hourly: hourly },
     marine: { current: { wave_height: 1.2, wave_direction: 285, wave_period: 8.5, sea_surface_temperature: 15.6 } }
   };
@@ -205,12 +205,12 @@ function renderHours(now) {
   for (var i = 0; i < h.time.length && shown < 8; i++) {
     var t = parseLocal(h.time[i]);
     if (t <= now || t.getHours() % 2) continue;
-    var kn = h.wind_speed_10m[i], c = windColor(kn), dir = h.wind_direction_10m[i];
+    var kmh = h.wind_speed_10m[i], knv = kmh / 1.852, c = windColor(knv), dir = h.wind_direction_10m[i];
     html += '<div class="h"><div class="hT">' + pad(t.getHours()) + "h</div>" +
       '<svg width="44" height="44" viewBox="-22 -22 44 44" style="margin-top:8px"><g transform="rotate(' + dir + ')">' +
       '<line x1="0" y1="-16" x2="0" y2="8" stroke="' + c + '" stroke-width="4" stroke-linecap="round"/>' +
       '<polygon points="0,18 -9,4 9,4" fill="' + c + '"/></g></svg>' +
-      '<div class="hV cond" style="color:' + c + '">' + kn + '</div><div class="hG">raf. ' + h.wind_gusts_10m[i] +
+      '<div class="hV cond" style="color:' + c + '">' + kmh + '</div><div class="hG">raf. ' + h.wind_gusts_10m[i] +
       ", " + ABBR[dirIndex(dir)] + "</div></div>";
     shown++;
   }
@@ -219,13 +219,14 @@ function renderHours(now) {
 
 function render() {
   if (!D) return;
-  var now = new Date(), c = D.forecast.current, kn = Math.round(c.wind_speed_10m), dir = c.wind_direction_10m;
-  renderRose(dir, kn);
-  el("speed").innerHTML = kn + "<small>nœuds</small>";
-  el("speed").style.color = windColor(kn);
-  el("gust").innerHTML = "Rafales à " + Math.round(c.wind_gusts_10m) + " nœuds (" + Math.round(c.wind_gusts_10m * 1.852) + " km/h)";
+  var now = new Date(), c = D.forecast.current, kmh = Math.round(c.wind_speed_10m), dir = c.wind_direction_10m;
+  var knv = c.wind_speed_10m / 1.852;
+  renderRose(dir, knv);
+  el("speed").innerHTML = kmh + "<small>km/h</small>";
+  el("speed").style.color = windColor(knv);
+  el("gust").innerHTML = "Rafales à " + Math.round(c.wind_gusts_10m) + " km/h";
   el("from").innerHTML = "Vient " + deDir(dir) + " (" + ABBR[dirIndex(dir)] + ")";
-  var b = beaufort(kn);
+  var b = beaufort(knv);
   el("beaufort").innerHTML = "Force " + b + ", " + BFT_NAMES[b];
 
   var m = D.marine.current;
