@@ -21,29 +21,29 @@
 
   /* Barre de navigation en HAUT (superposée, fine, translucide) */
   #nav {
-    position: absolute; top: 0; left: 0; right: 0; height: 50px;
+    position: absolute; top: 0; left: 0; right: 0; height: 52px;
     background: rgba(8,18,26,0.42);
     display: -webkit-flex; display: flex;
     -webkit-flex-direction: row; flex-direction: row;
-    -webkit-justify-content: center; justify-content: center;
-    -webkit-align-items: center; align-items: center;
     z-index: 10;
   }
+  /* 3 rectangles égaux, chacun un tiers de la largeur, icône centrée */
   .navBtn {
-    width: 40px; height: 40px; margin: 0 16px; border-radius: 20px;
+    -webkit-flex: 1; flex: 1; height: 100%;
     display: -webkit-flex; display: flex;
     -webkit-align-items: center; align-items: center;
     -webkit-justify-content: center; justify-content: center;
-    background: rgba(255,255,255,0.10); cursor: pointer;
+    cursor: pointer; border-right: 1px solid rgba(255,255,255,0.14);
     -webkit-transition: background 0.25s ease; transition: background 0.25s ease;
   }
-  .navBtn svg { width: 24px; height: 24px; display: block; }
+  .navBtn:last-child { border-right: 0; }
+  .navBtn svg { width: 26px; height: 26px; display: block; }
   .navBtn .ic { fill: none; stroke: #cdd9de; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .navBtn.active { background: #2e6f86; }
   .navBtn.active .ic { stroke: #ffffff; }
 
   /* Liseré de progression : fine ligne sous la barre, se remplit sur 30 s */
-  #prog { position: absolute; top: 50px; left: 0; right: 0; height: 2px; z-index: 11; }
+  #prog { position: absolute; top: 52px; left: 0; right: 0; height: 2px; z-index: 11; }
   #progFill { height: 100%; width: 0; background: #7cc4d6; }
 </style>
 </head>
