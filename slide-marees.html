@@ -51,7 +51,8 @@
   .dCoefs { font-size: 40px; font-weight: 600; margin-top: 4px; white-space: nowrap; }
   .dCoefs span { display: inline-block; min-width: 58px; }
   .dCoefs .gm { color: #f2b544; }
-  .dPm { font-size: 16px; color: #7f9ba3; margin-top: 2px; }
+  .dPm { font-size: 16px; color: #9fb8be; margin-top: 4px; }
+  .dBm { font-size: 16px; color: #7f9ba3; margin-top: 1px; }
 
   #credit { position: absolute; left: 56px; bottom: 14px; font-size: 13px; color: #5f7f89; }
   #updated { position: absolute; right: 56px; bottom: 14px; font-size: 13px; color: #5f7f89; }
@@ -250,24 +251,33 @@ function renderCurve(now) {
 }
 
 function renderDays(now) {
-  var byDay = {}, keys = [], today = ymd(now);
+  var pm = {}, bm = {}, keys = [], today = ymd(now);
   for (var i = 0; i < EXT.length; i++) {
-    var e = EXT[i]; if (e.type !== "PM") continue;
-    var k = ymd(e.date); if (k < today) continue;
-    if (!byDay[k]) { byDay[k] = []; keys.push(k); }
-    byDay[k].push(e);
+    var e = EXT[i], k = ymd(e.date);
+    if (k < today) continue;
+    if (e.type === "PM") {
+      if (!pm[k]) { pm[k] = []; if (keys.indexOf(k) === -1) keys.push(k); }
+      pm[k].push(e);
+    } else {
+      if (!bm[k]) bm[k] = [];
+      bm[k].push(e);
+    }
   }
+  keys.sort();
   var html = "";
   for (var d = 0; d < Math.min(DAYS_SHOWN, keys.length); d++) {
-    var list = byDay[keys[d]], date = list[0].date;
+    var key = keys[d], listPM = pm[key] || [], listBM = bm[key] || [];
+    var date = (listPM[0] || listBM[0]).date;
     var name = d === 0 ? "Aujourd'hui" : (d === 1 ? "Demain" : JOURS[date.getDay()] + " " + date.getDate());
-    var coefs = "", times = [];
-    for (var j = 0; j < list.length; j++) {
-      coefs += '<span class="' + (list[j].coef >= 95 ? "gm" : "") + '">' + (list[j].coef || "–") + "</span>";
-      times.push(hhmm(list[j].date));
+    var coefs = "", timesPM = [], timesBM = [];
+    for (var j = 0; j < listPM.length; j++) {
+      coefs += '<span class="' + (listPM[j].coef >= 95 ? "gm" : "") + '">' + (listPM[j].coef || "–") + "</span>";
+      timesPM.push(hhmm(listPM[j].date));
     }
+    for (var b = 0; b < listBM.length; b++) timesBM.push(hhmm(listBM[b].date));
     html += '<div class="day"><div class="dName">' + name + '</div><div class="dCoefs cond">' + coefs +
-      '</div><div class="dPm">PM ' + times.join(" et ") + "</div></div>";
+      '</div><div class="dPm">PM ' + timesPM.join(" et ") +
+      '</div><div class="dBm">BM ' + timesBM.join(" et ") + "</div></div>";
   }
   el("days").innerHTML = html;
 }
