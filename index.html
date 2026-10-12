@@ -87,7 +87,17 @@ function show(i) {
   restart();
 }
 
-function next() { show((cur + 1) % N); }
+/* Rotation auto : marées + météo tous les jours ; la voiture (retour)
+   n'entre dans la rotation que le dimanche. Elle reste atteignable en
+   cliquant son icône n'importe quel jour. */
+function rotationList() {
+  return (new Date().getDay() === 0) ? [0, 1, 2] : [0, 1];
+}
+function next() {
+  var list = rotationList();
+  var idx = list.indexOf(cur);
+  show(idx === -1 ? list[0] : list[(idx + 1) % list.length]);
+}
 
 function restart() {
   start = Date.now();
