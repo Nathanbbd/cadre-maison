@@ -21,7 +21,7 @@
 
   /* Barre de navigation en HAUT (superposée, fine, translucide) */
   #nav {
-    position: absolute; top: 0; left: 0; right: 0; height: 40px;
+    position: absolute; bottom: 0; left: 0; right: 0; height: 40px;
     background: rgba(10,22,30,0.72);
     display: -webkit-flex; display: flex;
     -webkit-flex-direction: row; flex-direction: row;
@@ -43,7 +43,7 @@
   .navBtn.active .ic { stroke: #ffffff; }
 
   /* Liseré de progression : fine ligne sous la barre, se remplit sur 30 s */
-  #prog { position: absolute; top: 40px; left: 0; right: 0; height: 2px; z-index: 11; }
+  #prog { position: absolute; bottom: 40px; left: 0; right: 0; height: 2px; z-index: 11; }
   #progFill { height: 100%; width: 0; background: #7cc4d6; }
 </style>
 </head>
