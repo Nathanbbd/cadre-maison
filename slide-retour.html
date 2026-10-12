@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Retour</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Même contraintes que la slide marées : WebView Android 6. */
+  html, body { margin: 0; height: 100%; background: #0c2430; overflow: hidden; }
+  body { font-family: "Barlow", "Roboto", "Helvetica Neue", Arial, sans-serif; color: #eef3f1; }
+  #stage { position: absolute; left: 0; top: 0; width: 1280px; height: 800px; background: #0f2a36;
+           -webkit-transform-origin: 0 0; transform-origin: 0 0; }
+  .cond { font-family: "Barlow Condensed", "Roboto Condensed", "Arial Narrow", sans-serif; }
+
+  #head { display: -webkit-flex; display: flex; -webkit-align-items: flex-end; align-items: flex-end;
+          padding: 40px 56px 22px; }
+  #title { -webkit-flex: 1; flex: 1; font-size: 56px; font-weight: 600; margin: 0; line-height: 1; }
+  #clock { font-size: 22px; color: #9fb8be; text-align: right; }
+  #clock b { color: #eef3f1; font-size: 40px; font-weight: 600; display: block; }
+
+  .row { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center;
+         margin: 0 56px; height: 192px; border-top: 1px solid #23495a; }
+  .dest { width: 330px; }
+  .city { font-size: 46px; font-weight: 600; line-height: 1; }
+  .via { font-size: 18px; color: #9fb8be; margin-top: 10px; }
+
+  .now { width: 400px; }
+  .dur { font-size: 76px; font-weight: 600; line-height: 1; }
+  .delay { display: inline-block; font-size: 20px; font-weight: 600; padding: 4px 12px; border-radius: 16px;
+           margin-left: 10px; vertical-align: 14px; }
+  .ok   { background: rgba(124,196,214,0.16); color: #7cc4d6; }
+  .slow { background: rgba(242,181,68,0.16); color: #f2b544; }
+  .bad  { background: rgba(232,106,90,0.18); color: #e86a5a; }
+  .arr { font-size: 19px; white-space: nowrap; color: #d9c9a3; margin-top: 8px; }
+
+  .slots { -webkit-flex: 1; flex: 1; }
+  .slotsLbl { font-size: 16px; color: #7f9ba3; margin-bottom: -8px; }
+
+  #foot { position: absolute; left: 56px; right: 56px; bottom: 14px; font-size: 13px; color: #5f7f89; }
+  #foot span { float: right; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="head">
+    <h1 id="title">Rentrer ce soir</h1>
+    <div id="clock"></div>
+  </div>
+  <div id="rows"></div>
+  <div id="foot">Temps de trajet avec trafic, au départ de La Plaine-sur-Mer. Les créneaux à venir sont des prévisions.<span id="src"></span></div>
+</div>
+
+<script>
+/* En production : DATA_URL = URL du Worker (/retour). Vide = données simulées. */
+var DATA_URL = "";
+var REFRESH_MIN = 10;
+
+/* Format attendu du Worker :
+   { updated: "...", trips: [ { name, via, km, now: {minutes, delay},
+       slots: [ {hour: 15, minutes: 190}, ... ] } ] } */
+
+function pad(n) { return n < 10 ? "0" + n : "" + n; }
+function hhmm(d) { return pad(d.getHours()) + ":" + pad(d.getMinutes()); }
+function el(id) { return document.getElementById(id); }
+function dur(min) { return Math.floor(min / 60) + " h " + pad(Math.round(min % 60)); }
+var JOURS = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+var MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+
+/* ---------- données simulées ---------- */
+function mock() {
+  // profil type d'un dimanche de retour : bouchons en milieu d'après-midi
+  var factor = { 13: 1.03, 14: 1.08, 15: 1.15, 16: 1.21, 17: 1.17, 18: 1.10, 19: 1.04, 20: 1.0, 21: 1.0 };
+  var base = [
+    { name: "Tours", via: "par Nantes, A11 et A85", km: 268, free: 168 },
+    { name: "Vouvray", via: "par Nantes, A11 et A85", km: 279, free: 177 },
+    { name: "Châteauroux", via: "par Tours et Loches", km: 372, free: 242 }
+  ];
+  var h = new Date().getHours(), trips = [];
+  for (var i = 0; i < base.length; i++) {
+    var b = base[i], f = factor[Math.max(13, Math.min(21, h))];
+    var slots = [];
+    for (var s = Math.max(h + 1, 15); s <= Math.max(h + 6, 20) && slots.length < 6; s++) {
+      slots.push({ hour: s, minutes: Math.round(b.free * (factor[Math.min(21, s)] || 1)) });
+    }
+    trips.push({ name: b.name, via: b.via, km: b.km,
+      now: { minutes: Math.round(b.free * f), delay: Math.round(b.free * (f - 1)) }, slots: slots });
+  }
+  return { trips: trips };
+}
+
+/* ---------- rendu ---------- */
+var DATA = null, lastLoad = null;
+
+function bars(slots) {
+  var W = 440, H = 136, n = slots.length, bw = 46, gap = (W - n * bw) / Math.max(1, n - 1);
+  var min = 1e9, max = 0, best = 0, i;
+  for (i = 0; i < n; i++) {
+    if (slots[i].minutes < min) { min = slots[i].minutes; best = i; }
+    if (slots[i].minutes > max) max = slots[i].minutes;
+  }
+  var lo = min * 0.85, s = "";
+  for (i = 0; i < n; i++) {
+    var v = slots[i].minutes, bh = 18 + (v - lo) / (max - lo || 1) * 58;
+    var x = i * (bw + gap), y = 104 - bh, isBest = i === best;
+    s += '<rect x="' + x + '" y="' + y + '" width="' + bw + '" height="' + bh + '" rx="4" fill="' +
+      (isBest ? "#7cc4d6" : "#2e6f86") + '" opacity="' + (isBest ? 1 : 0.6) + '"/>';
+    s += '<text x="' + (x + bw / 2) + '" y="' + (y - 6) + '" fill="' + (isBest ? "#eef3f1" : "#9fb8be") +
+      '" font-size="15" text-anchor="middle">' + dur(v).replace(" h ", "h") + "</text>";
+    s += '<text x="' + (x + bw / 2) + '" y="126" fill="' + (isBest ? "#7cc4d6" : "#7f9ba3") +
+      '" font-size="16" font-weight="' + (isBest ? 600 : 400) + '" text-anchor="middle">' + slots[i].hour + "h</text>";
+  }
+  return '<svg width="' + W + '" height="' + H + '">' + s + "</svg>";
+}
+
+function render() {
+  if (!DATA) return;
+  var now = new Date();
+  el("clock").innerHTML = "<b>" + hhmm(now) + "</b>" + JOURS[now.getDay()] + " " + now.getDate() + " " + MOIS[now.getMonth()];
+  var html = "";
+  for (var i = 0; i < DATA.trips.length; i++) {
+    var t = DATA.trips[i];
+    var cls = t.now.delay < 10 ? "ok" : (t.now.delay < 30 ? "slow" : "bad");
+    var dl = t.now.delay < 3 ? "fluide" : "+" + t.now.delay + " min";
+    var arrival = new Date(now.getTime() + t.now.minutes * 60000);
+    html += '<div class="row">' +
+      '<div class="dest"><div class="city">' + t.name + '</div><div class="via">' + t.via + ", " + t.km + ' km</div></div>' +
+      '<div class="now"><span class="dur cond">' + dur(t.now.minutes) + '</span><span class="delay ' + cls + '">' + dl + "</span>" +
+      '<div class="arr">Arrivée vers ' + hhmm(arrival) + " si vous partez maintenant</div></div>" +
+      '<div class="slots"><div class="slotsLbl">Si vous partez à</div>' + (t.slots.length ? bars(t.slots) : "") + "</div>" +
+      "</div>";
+  }
+  el("rows").innerHTML = html;
+  el("src").innerHTML = DATA_URL ? "Trafic TomTom, mis à jour à " + hhmm(lastLoad) : "Données simulées (démo)";
+}
+
+function load() {
+  if (!DATA_URL) { DATA = mock(); lastLoad = new Date(); render(); return; }
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", DATA_URL);
+  xhr.onload = function () {
+    if (xhr.status === 200) { try { DATA = JSON.parse(xhr.responseText); lastLoad = new Date(); render(); } catch (e) {} }
+  };
+  xhr.send();
+}
+
+function fit() {
+  var s = Math.min(window.innerWidth / 1280, window.innerHeight / 800), st = el("stage").style;
+  st.webkitTransform = st.transform = "scale(" + s + ")";
+  st.left = ((window.innerWidth - 1280 * s) / 2) + "px";
+  st.top = ((window.innerHeight - 800 * s) / 2) + "px";
+}
+window.onresize = fit; fit();
+
+/* rafraîchissement calé sur le changement de minute */
+function tick() { render(); setTimeout(tick, 60000 - (Date.now() % 60000) + 50); }
+load(); setTimeout(tick, 60000 - (Date.now() % 60000) + 50);
+setInterval(load, REFRESH_MIN * 60000);
+</script>
+</body>
+</html>

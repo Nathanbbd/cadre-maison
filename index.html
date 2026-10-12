@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cadre maison — La Plaine-sur-Mer</title>
+<style>
+  /* Shell du diaporama. Compatible WebView Android 6 / Chrome 106 :
+     flexbox uniquement, pas de grid, pas de variables CSS. */
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  body { font-family: "Roboto", "Helvetica Neue", Arial, sans-serif; }
+
+  /* Zone des slides : plein écran, les iframes se superposent et se fondent */
+  .slide {
+    position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+    border: 0; opacity: 0; -webkit-transition: opacity 0.6s ease; transition: opacity 0.6s ease;
+    pointer-events: none;
+  }
+  .slide.on { opacity: 1; pointer-events: auto; }
+
+  /* Barre de navigation à gauche (superposée) */
+  #nav {
+    position: absolute; left: 0; top: 0; bottom: 0; width: 66px;
+    background: rgba(8,18,26,0.55);
+    display: -webkit-flex; display: flex;
+    -webkit-flex-direction: column; flex-direction: column;
+    -webkit-justify-content: center; justify-content: center;
+    -webkit-align-items: center; align-items: center;
+    z-index: 10;
+  }
+  .navBtn {
+    width: 46px; height: 46px; margin: 10px 0; border-radius: 23px;
+    display: -webkit-flex; display: flex;
+    -webkit-align-items: center; align-items: center;
+    -webkit-justify-content: center; justify-content: center;
+    background: rgba(255,255,255,0.08); cursor: pointer;
+    -webkit-transition: background 0.25s ease; transition: background 0.25s ease;
+  }
+  .navBtn svg { width: 26px; height: 26px; display: block; }
+  .navBtn .ic { fill: none; stroke: #9fb8be; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .navBtn.active { background: #2e6f86; }
+  .navBtn.active .ic { stroke: #ffffff; }
+
+  /* Petit liseré de progression sous l'icône active */
+  #prog {
+    position: absolute; left: 10px; width: 46px; height: 3px; border-radius: 2px;
+    background: rgba(255,255,255,0.18); overflow: hidden; z-index: 11;
+  }
+  #progFill { height: 100%; width: 0; background: #7cc4d6; }
+</style>
+</head>
+<body>
+
+  <iframe class="slide" id="s0" src="slide-marees.html"></iframe>
+  <iframe class="slide" id="s1" src="slide-retour.html"></iframe>
+  <iframe class="slide" id="s2" src="meteo-mariniere.html"></iframe>
+
+  <div id="nav">
+    <div class="navBtn" data-i="0" title="Marées">
+      <svg viewBox="0 0 24 24"><path class="ic" d="M2 15c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2M2 20c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2"/></svg>
+    </div>
+    <div class="navBtn" data-i="1" title="Retour">
+      <svg viewBox="0 0 24 24"><path class="ic" d="M3 15v-2.6l2.2-4.1a1.6 1.6 0 0 1 1.4-.8h6.3a1.6 1.6 0 0 1 1.2.6L17.9 11H20a1 1 0 0 1 1 1v3"/><path class="ic" d="M3 15h2.2M9.4 15h5.2M18.8 15H21M8 11h6.2"/><circle class="ic" cx="7.3" cy="15.2" r="1.8"/><circle class="ic" cx="16.7" cy="15.2" r="1.8"/></svg>
+    </div>
+    <div class="navBtn" data-i="2" title="Météo marine">
+      <svg viewBox="0 0 24 24"><circle class="ic" cx="9" cy="8.5" r="3"/><path class="ic" d="M9 3.6v1.5M4.1 8.5h1.5M5.3 4.8l1.1 1.1M12.7 4.8l-1.1 1.1"/><path class="ic" d="M7.5 19h9.3a3.1 3.1 0 0 0 .1-6.2 4 4 0 0 0-7.6-1A3.3 3.3 0 0 0 7.5 19z"/></svg>
+    </div>
+  </div>
+  <div id="prog"><div id="progFill"></div></div>
+
+<script>
+/* ---------- réglages ---------- */
+var ROTATE_MS = 30000;   /* durée d'affichage de chaque slide (30 s) */
+var N = 3;
+
+var cur = -1, timer = null, start = 0, raf = null;
+var slides = [document.getElementById("s0"), document.getElementById("s1"), document.getElementById("s2")];
+var btns = document.getElementsByClassName("navBtn");
+var prog = document.getElementById("prog");
+var progFill = document.getElementById("progFill");
+
+function placeProg(i) {
+  /* positionne le liseré sous l'icône active */
+  var b = btns[i].getBoundingClientRect();
+  prog.style.top = (b.bottom + 4) + "px";
+}
+
+function show(i) {
+  if (i === cur) { restart(); return; }
+  cur = i;
+  for (var k = 0; k < N; k++) {
+    if (k === i) { slides[k].className = "slide on"; btns[k].className = "navBtn active"; }
+    else { slides[k].className = "slide"; btns[k].className = "navBtn"; }
+  }
+  placeProg(i);
+  restart();
+}
+
+function next() { show((cur + 1) % N); }
+
+function restart() {
+  start = Date.now();
+  if (timer) clearTimeout(timer);
+  timer = setTimeout(next, ROTATE_MS);
+}
+
+/* animation du liseré de progression */
+function loop() {
+  var f = Math.min(1, (Date.now() - start) / ROTATE_MS);
+  progFill.style.width = Math.round(f * 46) + "px";
+  raf = window.requestAnimationFrame ? requestAnimationFrame(loop) : setTimeout(loop, 100);
+}
+
+/* clics / taps sur les icônes */
+for (var k = 0; k < N; k++) {
+  (function (idx) {
+    btns[idx].onclick = function () { show(idx); };
+  })(k);
+}
+
+window.onresize = function () { placeProg(cur < 0 ? 0 : cur); };
+
+show(0);
+loop();
+</script>
+</body>
+</html>

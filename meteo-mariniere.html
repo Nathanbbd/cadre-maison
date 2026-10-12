@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Météo marine, La Plaine-sur-Mer</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* WebView Android 6 : flexbox, pas de variables CSS, pas de grid. */
+  html, body { margin: 0; height: 100%; background: #e9eef4; overflow: hidden; }
+  body { font-family: "Barlow", "Roboto", "Helvetica Neue", Arial, sans-serif; color: #14254a; }
+  #stage { position: absolute; left: 0; top: 0; width: 1280px; height: 800px; background: #f7f9fb;
+           -webkit-transform-origin: 0 0; transform-origin: 0 0; }
+  .cond { font-family: "Barlow Condensed", "Roboto Condensed", "Arial Narrow", sans-serif; }
+  .muted { color: #55657f; }
+
+  #main { display: -webkit-flex; display: flex; padding: 40px 56px 0; height: 560px; box-sizing: border-box; }
+
+  /* Vent */
+  #wind { width: 730px; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; }
+  #rose { width: 280px; height: 280px; }
+  #windTxt { margin-left: 34px; white-space: nowrap; }
+  #place { font-size: 22px; font-weight: 500; margin: 0 0 14px; }
+  #speed { font-size: 120px; font-weight: 600; line-height: 0.9; }
+  #speed small { font-size: 36px; font-weight: 500; color: #55657f; margin-left: 6px; }
+  #gust { font-size: 23px; margin-top: 10px; }
+  #from { font-size: 29px; font-weight: 600; margin-top: 18px; }
+  #beaufort { font-size: 22px; color: #14254a; margin-top: 6px; }
+
+  /* Colonne droite */
+  #side { -webkit-flex: 1; flex: 1; padding-left: 40px; padding-top: 30px; border-left: 1px solid #d5dce6; }
+  .block { margin-bottom: 46px; }
+  .bTitle { font-size: 20px; color: #55657f; font-weight: 500; margin-bottom: 8px; }
+  #rainMsg { font-size: 32px; font-weight: 600; line-height: 1.15; margin-bottom: 12px; }
+  #rainMsg.dry { color: #2c5aa0; }
+  #rainMsg.wet { color: #e08a1e; }
+  .sea { display: -webkit-flex; display: flex; }
+  .seaItem { -webkit-flex: 1; flex: 1; }
+  .seaVal { font-size: 52px; font-weight: 600; line-height: 1; }
+  .seaVal small { font-size: 22px; color: #55657f; font-weight: 500; margin-left: 3px; }
+  .seaLbl { font-size: 17px; color: #55657f; margin-top: 6px; }
+
+  /* Bandeau des prochaines heures */
+  #hours { display: -webkit-flex; display: flex; margin: 0 56px; height: 190px; border-top: 1px solid #d5dce6; }
+  .h { -webkit-flex: 1; flex: 1; text-align: center; padding-top: 16px; }
+  .hT { font-size: 18px; color: #55657f; }
+  .hV { font-size: 36px; font-weight: 600; margin-top: 2px; }
+  .hG { font-size: 16px; color: #6b7a92; }
+
+  #foot { position: absolute; left: 56px; right: 56px; bottom: 14px; font-size: 13px; color: #8b97aa; }
+  #foot span { float: right; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="main">
+    <div id="wind">
+      <svg id="rose" width="280" height="280" viewBox="-150 -150 300 300"></svg>
+      <div id="windTxt">
+        <p id="place">Vent à La Plaine-sur-Mer</p>
+        <div id="speed" class="cond"></div>
+        <div id="gust" class="muted"></div>
+        <div id="from"></div>
+        <div id="beaufort"></div>
+      </div>
+    </div>
+    <div id="side">
+      <div class="block">
+        <div class="bTitle">Pluie dans les 2 heures</div>
+        <div id="rainMsg"></div>
+        <svg id="rain" width="440" height="96"></svg>
+      </div>
+      <div class="block">
+        <div class="bTitle">La mer</div>
+        <div class="sea">
+          <div class="seaItem"><div id="wave" class="seaVal cond"></div><div id="waveLbl" class="seaLbl"></div></div>
+          <div class="seaItem"><div id="period" class="seaVal cond"></div><div class="seaLbl">période</div></div>
+          <div class="seaItem"><div id="sst" class="seaVal cond"></div><div class="seaLbl">eau</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="hours"></div>
+  <div id="foot">Météo : Open-Meteo (modèles Météo-France), vent en nœuds.<span id="src"></span></div>
+</div>
+
+<script>
+/* ============================================================
+   Open-Meteo est gratuit, sans clé. Mets USE_LIVE = true pour les
+   vraies données (ou remplace les URL par celles de ton Worker).
+   ============================================================ */
+var USE_LIVE = true;
+var LAT = 47.14, LON = -2.19;          // La Plaine-sur-Mer (terre)
+var SEA_LAT = 47.13, SEA_LON = -2.28;  // un point en mer, au large de la pointe Saint-Gildas
+var FORECAST_URL = "https://api.open-meteo.com/v1/forecast?latitude=" + LAT + "&longitude=" + LON +
+  "&current=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m" +
+  "&minutely_15=precipitation&forecast_minutely_15=12" +
+  "&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m" +
+  "&models=meteofrance_seamless&wind_speed_unit=kn&timezone=Europe%2FParis&forecast_days=2";
+var MARINE_URL = "https://marine-api.open-meteo.com/v1/marine?latitude=" + SEA_LAT + "&longitude=" + SEA_LON +
+  "&current=wave_height,wave_direction,wave_period,sea_surface_temperature&timezone=Europe%2FParis";
+var REFRESH_MIN = 10;
+
+/* ---------- utilitaires ---------- */
+function pad(n) { return n < 10 ? "0" + n : "" + n; }
+function hhmm(d) { return pad(d.getHours()) + ":" + pad(d.getMinutes()); }
+function el(id) { return document.getElementById(id); }
+function fr(n, d) { return n.toFixed(d).replace(".", ","); }
+function parseLocal(s) { // "2026-10-11T15:30" en heure locale
+  var p = s.split(/[-T:]/);
+  return new Date(+p[0], +p[1] - 1, +p[2], +p[3], +p[4]);
+}
+var DIRS = ["nord", "nord-est", "est", "sud-est", "sud", "sud-ouest", "ouest", "nord-ouest"];
+var ABBR = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"];
+function deDir(deg) { var n = DIRS[dirIndex(deg)]; return (n === "est" || n === "ouest" ? "de l'" : "du ") + n; }
+function dirIndex(deg) { return Math.round(((deg % 360) + 360) % 360 / 45) % 8; }
+var BFT = [1, 4, 7, 11, 17, 22, 28, 34, 41, 48, 56, 64];
+var BFT_NAMES = ["calme", "très légère brise", "légère brise", "petite brise", "jolie brise", "bonne brise",
+  "vent frais", "grand frais", "coup de vent", "fort coup de vent", "tempête", "violente tempête", "ouragan"];
+function beaufort(kn) { for (var i = 0; i < BFT.length; i++) if (kn < BFT[i]) return i; return 12; }
+function windColor(kn) { return kn < 11 ? "#55657f" : (kn < 22 ? "#2c5aa0" : (kn < 34 ? "#e08a1e" : "#d6403a")); }
+
+/* ---------- données simulées (même structure qu'Open-Meteo) ---------- */
+function mock() {
+  var now = new Date(), base = new Date(now); base.setMinutes(0, 0, 0);
+  var m15 = { time: [], precipitation: [] }, start15 = new Date(now); start15.setMinutes(Math.floor(now.getMinutes() / 15) * 15, 0, 0);
+  for (var i = 0; i < 12; i++) {
+    var t = new Date(start15.getTime() + i * 900000);
+    m15.time.push(t.getFullYear() + "-" + pad(t.getMonth() + 1) + "-" + pad(t.getDate()) + "T" + hhmm(t));
+    m15.precipitation.push(i < 5 ? 0 : [0.1, 0.4, 0.9, 0.7, 0.3, 0.1, 0][i - 5]);
+  }
+  var hourly = { time: [], wind_speed_10m: [], wind_direction_10m: [], wind_gusts_10m: [] };
+  for (var h = 0; h < 30; h++) {
+    var th = new Date(base.getTime() + h * 3600000), s = 14 + 6 * Math.sin(h / 4);
+    hourly.time.push(th.getFullYear() + "-" + pad(th.getMonth() + 1) + "-" + pad(th.getDate()) + "T" + hhmm(th));
+    hourly.wind_speed_10m.push(Math.round(s));
+    hourly.wind_gusts_10m.push(Math.round(s * 1.45));
+    hourly.wind_direction_10m.push(Math.round(300 + h * 3) % 360);
+  }
+  return {
+    forecast: { current: { temperature_2m: 14.2, wind_speed_10m: 17, wind_direction_10m: 305, wind_gusts_10m: 26 },
+                minutely_15: m15, hourly: hourly },
+    marine: { current: { wave_height: 1.2, wave_direction: 285, wave_period: 8.5, sea_surface_temperature: 15.6 } }
+  };
+}
+
+/* ---------- rendu ---------- */
+var D = null, lastLoad = null;
+
+function renderRose(dir, kn) {
+  var s = "", i;
+  s += '<circle r="132" fill="none" stroke="#d5dce6" stroke-width="2"/>';
+  for (i = 0; i < 72; i++) {
+    var a = i * 5 * Math.PI / 180, r1 = i % 18 === 0 ? 116 : (i % 9 === 0 ? 122 : 127);
+    s += '<line x1="' + (Math.sin(a) * r1).toFixed(1) + '" y1="' + (-Math.cos(a) * r1).toFixed(1) +
+      '" x2="' + (Math.sin(a) * 132).toFixed(1) + '" y2="' + (-Math.cos(a) * 132).toFixed(1) +
+      '" stroke="#b7c2d2" stroke-width="' + (i % 9 === 0 ? 2 : 1) + '"/>';
+  }
+  for (i = 0; i < 8; i += 2) {
+    var b = i * 45 * Math.PI / 180;
+    s += '<text x="' + (Math.sin(b) * 96).toFixed(1) + '" y="' + (-Math.cos(b) * 96 + 8).toFixed(1) +
+      '" fill="#55657f" font-size="24" font-weight="600" text-anchor="middle">' + ABBR[i] + "</text>";
+  }
+  // flèche : la queue est du côté d'où vient le vent, la pointe montre où il va
+  var c = windColor(kn);
+  s += '<g transform="rotate(' + dir + ')">' +
+    '<line x1="0" y1="-118" x2="0" y2="64" stroke="' + c + '" stroke-width="7" stroke-linecap="round"/>' +
+    '<polygon points="0,104 -22,58 22,58" fill="' + c + '"/>' +
+    '<circle cx="0" cy="-118" r="10" fill="#f7f9fb" stroke="' + c + '" stroke-width="5"/></g>';
+  el("rose").innerHTML = s;
+}
+
+function renderRain(now) {
+  var m = D.forecast.minutely_15, bars = [], i, firstWet = null, maxP = 0;
+  for (i = 0; i < m.time.length; i++) {
+    var t = parseLocal(m.time[i]);
+    if (t.getTime() + 900000 < now.getTime()) continue;
+    var p = m.precipitation[i] || 0;
+    bars.push({ t: t, p: p });
+    if (p >= 0.1 && firstWet === null) firstWet = t;
+    if (p > maxP) maxP = p;
+  }
+  bars = bars.slice(0, 8);
+  var msg = el("rainMsg");
+  if (firstWet === null || firstWet.getTime() - now.getTime() > 2 * 3600000) {
+    msg.className = "dry"; msg.innerHTML = "Pas de pluie prévue";
+  } else {
+    var kind = maxP < 0.5 ? "Pluie faible" : (maxP < 2 ? "Pluie modérée" : "Forte pluie");
+    msg.className = "wet";
+    msg.innerHTML = firstWet <= now ? kind + " en ce moment" : kind + " à partir de " + hhmm(firstWet);
+  }
+  // barres par quart d'heure (mm/15 min, échelle bornée)
+  var W = 440, bw = 46, gap = (W - 8 * bw) / 7, s = "";
+  for (i = 0; i < bars.length; i++) {
+    var hgt = bars[i].p < 0.05 ? 4 : 8 + Math.min(bars[i].p, 2) / 2 * 52, x = i * (bw + gap);
+    s += '<rect x="' + x + '" y="' + (64 - hgt) + '" width="' + bw + '" height="' + hgt + '" rx="3" fill="' +
+      (bars[i].p < 0.05 ? "#d5dce6" : "#2c5aa0") + '"/>';
+    if (i % 2 === 0) s += '<text x="' + x + '" y="90" fill="#6b7a92" font-size="16">' + hhmm(bars[i].t) + "</text>";
+  }
+  el("rain").innerHTML = s;
+}
+
+function renderHours(now) {
+  var h = D.forecast.hourly, html = "", shown = 0;
+  for (var i = 0; i < h.time.length && shown < 8; i++) {
+    var t = parseLocal(h.time[i]);
+    if (t <= now || t.getHours() % 2) continue;
+    var kn = h.wind_speed_10m[i], c = windColor(kn), dir = h.wind_direction_10m[i];
+    html += '<div class="h"><div class="hT">' + pad(t.getHours()) + "h</div>" +
+      '<svg width="44" height="44" viewBox="-22 -22 44 44" style="margin-top:8px"><g transform="rotate(' + dir + ')">' +
+      '<line x1="0" y1="-16" x2="0" y2="8" stroke="' + c + '" stroke-width="4" stroke-linecap="round"/>' +
+      '<polygon points="0,18 -9,4 9,4" fill="' + c + '"/></g></svg>' +
+      '<div class="hV cond" style="color:' + c + '">' + kn + '</div><div class="hG">raf. ' + h.wind_gusts_10m[i] +
+      ", " + ABBR[dirIndex(dir)] + "</div></div>";
+    shown++;
+  }
+  el("hours").innerHTML = html;
+}
+
+function render() {
+  if (!D) return;
+  var now = new Date(), c = D.forecast.current, kn = Math.round(c.wind_speed_10m), dir = c.wind_direction_10m;
+  renderRose(dir, kn);
+  el("speed").innerHTML = kn + "<small>nœuds</small>";
+  el("speed").style.color = windColor(kn);
+  el("gust").innerHTML = "Rafales à " + Math.round(c.wind_gusts_10m) + " nœuds (" + Math.round(c.wind_gusts_10m * 1.852) + " km/h)";
+  el("from").innerHTML = "Vient " + deDir(dir) + " (" + ABBR[dirIndex(dir)] + ")";
+  var b = beaufort(kn);
+  el("beaufort").innerHTML = "Force " + b + ", " + BFT_NAMES[b];
+
+  var m = D.marine.current;
+  el("wave").innerHTML = fr(m.wave_height, 1) + "<small>m</small>";
+  el("waveLbl").innerHTML = "vagues venant " + deDir(m.wave_direction);
+  el("period").innerHTML = Math.round(m.wave_period) + "<small>s</small>";
+  el("sst").innerHTML = Math.round(m.sea_surface_temperature) + "<small>°C</small>";
+
+  renderRain(now); renderHours(now);
+  el("src").innerHTML = USE_LIVE ? "Mis à jour à " + hhmm(lastLoad) : "Données simulées (démo)";
+}
+
+function getJSON(url, cb) {
+  var x = new XMLHttpRequest(); x.open("GET", url);
+  x.onload = function () { if (x.status === 200) { try { cb(JSON.parse(x.responseText)); } catch (e) {} } };
+  x.send();
+}
+
+function load() {
+  if (!USE_LIVE) { D = mock(); lastLoad = new Date(); render(); return; }
+  getJSON(FORECAST_URL, function (f) {
+    getJSON(MARINE_URL, function (m) { D = { forecast: f, marine: m }; lastLoad = new Date(); render(); });
+  });
+}
+
+function fit() {
+  var s = Math.min(window.innerWidth / 1280, window.innerHeight / 800), st = el("stage").style;
+  st.webkitTransform = st.transform = "scale(" + s + ")";
+  st.left = ((window.innerWidth - 1280 * s) / 2) + "px";
+  st.top = ((window.innerHeight - 800 * s) / 2) + "px";
+}
+window.onresize = fit; fit();
+
+function tick() { render(); setTimeout(tick, 60000 - (Date.now() % 60000) + 50); }
+load(); setTimeout(tick, 60000 - (Date.now() % 60000) + 50);
+setInterval(load, REFRESH_MIN * 60000);
+</script>
+</body>
+</html>
