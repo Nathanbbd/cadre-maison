@@ -293,11 +293,16 @@ function load() {
   if (!DATA_URL) { EXT = flatten(mockPayload()); lastLoad = new Date(); render(); return; }
   var xhr = new XMLHttpRequest();
   xhr.open("GET", DATA_URL);
+  xhr.timeout = 15000;
+  function retry() { if (!EXT.length) setTimeout(load, 60000); } // réessaie dans 1 min tant qu'on n'a rien
   xhr.onload = function () {
     if (xhr.status === 200) {
-      try { EXT = flatten(JSON.parse(xhr.responseText)); lastLoad = new Date(); render(); } catch (e) {}
+      try { EXT = flatten(JSON.parse(xhr.responseText)); lastLoad = new Date(); render(); return; } catch (e) {}
     }
+    retry();
   };
+  xhr.onerror = retry;
+  xhr.ontimeout = retry;
   xhr.send(); // en cas d'échec, on garde les dernières données affichées
 }
 
