@@ -63,6 +63,15 @@
     box-shadow: 0 2px 10px rgba(0,0,0,0.25); white-space: nowrap;
   }
   body.paused #pauseBadge { display: block; }
+
+  /* Écran noir : veille (nuit) ou mode absent */
+  #blackout { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: #000; z-index: 50;
+    display: none; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center; text-align: center; }
+  #blackout.on { display: -webkit-flex; display: flex; }
+  #blackMsg { font-family: "Roboto", Arial, sans-serif; padding: 0 48px; }
+  #blackTitle { font-size: 42px; font-weight: 600; color: #d6dee3; }
+  #blackSub { font-size: 22px; color: #7c8b96; margin-top: 16px; }
+  #blackClock { font-size: 72px; font-weight: 300; color: #243038; }
 </style>
 </head>
 <body>
@@ -93,6 +102,7 @@
   </div>
   <div id="prog"><div id="progFill"></div></div>
   <div id="pauseBadge">&#9208; En pause — appuyez pour reprendre</div>
+  <div id="blackout"><div id="blackMsg"></div></div>
 
 <script>
 /* ---------- réglages ---------- */
@@ -212,6 +222,37 @@ document.addEventListener("touchstart", pauseRotation, true);
 
 show(0);
 loop();
+
+/* ---------- Veille (nuit) & Mode absent, pilotés par le Worker admin ----------
+   Colle l'URL de ton Worker "cadre-admin" ci-dessous pour activer la fonction. */
+var ADMIN_URL = "https://cadre-adminlpl.boisbourdinnathande.workers.dev";
+var ST = null, wakeUntil = 0;
+function hhmmNow() { var d = new Date(); function p(n) { return n < 10 ? "0" + n : "" + n; } return p(d.getHours()) + ":" + p(d.getMinutes()); }
+function applyBlackout() {
+  var bo = document.getElementById("blackout"), msg = document.getElementById("blackMsg");
+  var black = ST && ST.blackout && Date.now() > wakeUntil;
+  if (black) {
+    if (ST.absent) msg.innerHTML = '<div id="blackTitle">Nous sommes absents</div><div id="blackSub">Touchez l\'écran si vous êtes rentré</div>';
+    else msg.innerHTML = '<div id="blackClock">' + hhmmNow() + '</div>';
+    bo.className = "on";
+  } else { bo.className = ""; }
+}
+function pollState() {
+  if (!ADMIN_URL) return;
+  var xhr = new XMLHttpRequest(); xhr.open("GET", ADMIN_URL + "?t=" + Date.now()); xhr.timeout = 10000;
+  xhr.onload = function () { if (xhr.status === 200) { try { ST = JSON.parse(xhr.responseText); applyBlackout(); } catch (e) {} } };
+  xhr.send();
+}
+document.getElementById("blackout").addEventListener("click", function () {
+  if (!ST) return;
+  if (ST.absent) {
+    if (ADMIN_URL) { var xhr = new XMLHttpRequest(); xhr.open("GET", ADMIN_URL + "?action=clearAbsent&t=" + Date.now()); xhr.onload = function () { try { ST = JSON.parse(xhr.responseText); } catch (e) {} applyBlackout(); }; xhr.send(); }
+    ST.absent = false; applyBlackout();
+  } else {
+    wakeUntil = Date.now() + 60000; applyBlackout(); setTimeout(applyBlackout, 60500);
+  }
+});
+if (ADMIN_URL) { pollState(); setInterval(pollState, 60000); setInterval(applyBlackout, 5000); }
 
 /* Filet de sécurité : recharge tout le dashboard une fois par heure,
    au cas où une requête de données aurait échoué (ex. réseau au réveil). */

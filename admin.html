@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Cadre — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#eef2f7; --card:#ffffff; --ink:#14254a; --muted:#64748b; --line:#e3e8f0;
+          --accent:#2c5aa0; --ok:#2e8b57; --warn:#e08a1e; --danger:#c0392b; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Barlow", system-ui, Arial, sans-serif; }
+  .wrap { max-width: 520px; margin: 0 auto; padding: 20px 16px 60px; }
+  h1 { font-size: 28px; margin: 6px 0 2px; }
+  .sub { color: var(--muted); font-size: 15px; margin-bottom: 18px; }
+
+  .status { background: var(--card); border-radius: 18px; padding: 18px 20px; box-shadow: 0 2px 12px rgba(20,37,74,0.06); margin-bottom: 16px; }
+  .statusBig { font-size: 30px; font-weight: 700; display: flex; align-items: center; }
+  .dot { width: 14px; height: 14px; border-radius: 7px; margin-right: 12px; background: var(--ok); }
+  .dot.veille { background: var(--accent); } .dot.absent { background: var(--danger); }
+  .statusSub { color: var(--muted); font-size: 15px; margin-top: 6px; }
+
+  .card { background: var(--card); border-radius: 18px; padding: 18px 20px; box-shadow: 0 2px 12px rgba(20,37,74,0.06); margin-bottom: 16px; }
+  .card h2 { font-size: 19px; margin: 0 0 4px; }
+  .card p { color: var(--muted); font-size: 14px; margin: 0 0 14px; }
+  .rowb { display: flex; align-items: center; justify-content: space-between; }
+
+  .switch { position: relative; width: 58px; height: 34px; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; inset: 0; background: var(--line); border-radius: 34px; transition: .2s; }
+  .slider:before { content: ""; position: absolute; height: 26px; width: 26px; left: 4px; top: 4px; background: #fff; border-radius: 50%; transition: .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+  input:checked + .slider { background: var(--danger); }
+  input:checked + .slider:before { transform: translateX(24px); }
+  input.blue:checked + .slider { background: var(--accent); }
+
+  .times { display: flex; gap: 14px; margin-top: 14px; }
+  .times label { flex: 1; font-size: 14px; color: var(--muted); }
+  input[type=time] { width: 100%; font-size: 20px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink); margin-top: 4px; font-family: inherit; }
+  input[type=text], input[type=password] { width: 100%; font-size: 16px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink); margin-top: 6px; font-family: inherit; }
+
+  .btn { width: 100%; margin-top: 16px; padding: 14px; border: 0; border-radius: 14px; background: var(--accent); color: #fff; font-size: 17px; font-weight: 600; font-family: inherit; }
+  .btn:active { opacity: .85; }
+  .btn.ghost { background: transparent; color: var(--accent); border: 1px solid var(--line); }
+
+  details summary { color: var(--muted); font-size: 14px; cursor: pointer; margin-top: 8px; }
+  #toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 12px; font-size: 15px; opacity: 0; transition: .25s; pointer-events: none; }
+  #toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0c2430; --card:#0f2a36; --ink:#eef3f1; --muted:#9fb8be; --line:#23495a; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Cadre — La Plaine</h1>
+  <div class="sub">Contrôle de l'écran</div>
+
+  <div class="status" id="status">
+    <div class="statusBig"><span class="dot" id="dot"></span><span id="stateTxt">—</span></div>
+    <div class="statusSub" id="stateSub">Connexion…</div>
+  </div>
+
+  <div class="card">
+    <div class="rowb">
+      <div><h2>Mode absent</h2><p style="margin:0">Écran noir avec message. Toucher le cadre le désactive.</p></div>
+      <label class="switch"><input type="checkbox" id="absent"><span class="slider"></span></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="rowb">
+      <div><h2>Veille automatique la nuit</h2><p style="margin:0">Écran noir entre ces heures.</p></div>
+      <label class="switch"><input type="checkbox" id="vEnabled" class="blue"><span class="slider"></span></label>
+    </div>
+    <div class="times">
+      <label>Extinction (coucher)<input type="time" id="vStart"></label>
+      <label>Allumage (réveil)<input type="time" id="vEnd"></label>
+    </div>
+    <button class="btn" id="saveVeille">Enregistrer la veille</button>
+  </div>
+
+  <details>
+    <summary>Réglages (adresse du Worker &amp; code)</summary>
+    <div class="card" style="margin-top:10px">
+      <label style="font-size:14px;color:var(--muted)">Adresse du Worker
+        <input type="text" id="url" placeholder="https://cadre-admin.xxxx.workers.dev" autocapitalize="off" autocomplete="off"></label>
+      <label style="font-size:14px;color:var(--muted);display:block;margin-top:12px">Code PIN
+        <input type="password" id="pin" placeholder="ton code" inputmode="numeric"></label>
+      <button class="btn ghost" id="saveCfg">Enregistrer les réglages</button>
+    </div>
+  </details>
+</div>
+<div id="toast"></div>
+
+<script>
+  var $ = function (id) { return document.getElementById(id); };
+  var URLK = "cadreAdminUrl", PINK = "cadreAdminPin";
+  function getUrl() { try { return localStorage.getItem(URLK) || ""; } catch (e) { return ""; } }
+  function getPin() { try { return localStorage.getItem(PINK) || ""; } catch (e) { return ""; } }
+  var toastT;
+  function toast(m) { var t = $("toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove("on"); }, 2200); }
+
+  function api(params) {
+    var base = getUrl(); if (!base) return Promise.reject(new Error("no-url"));
+    var qs = params ? ("?" + params) : "";
+    return fetch(base + qs, { cache: "no-store" }).then(function (r) { return r.json(); });
+  }
+
+  function paintState(s) {
+    if (s.error) { $("stateTxt").textContent = "Erreur"; $("stateSub").textContent = s.error; return; }
+    var dot = $("dot"), txt = $("stateTxt"), sub = $("stateSub");
+    dot.className = "dot";
+    if (s.absent) { dot.classList.add("absent"); txt.textContent = "Absent"; sub.textContent = "Écran noir avec message · " + s.now; }
+    else if (s.veilleActive) { dot.classList.add("veille"); txt.textContent = "En veille"; sub.textContent = "Nuit · réveil à " + (s.veille ? s.veille.end : "—") + " · " + s.now; }
+    else { txt.textContent = "Allumé"; sub.textContent = "Dashboard actif · " + s.now; }
+    $("absent").checked = !!s.absent;
+    if (s.veille) { $("vEnabled").checked = !!s.veille.enabled; if (s.veille.start) $("vStart").value = s.veille.start; if (s.veille.end) $("vEnd").value = s.veille.end; }
+  }
+
+  function refresh() {
+    if (!getUrl()) { $("stateTxt").textContent = "À configurer"; $("stateSub").textContent = "Ouvre Réglages et colle l'adresse du Worker + ton code."; return; }
+    api("").then(paintState).catch(function () { $("stateTxt").textContent = "Hors ligne"; $("stateSub").textContent = "Worker injoignable."; });
+  }
+
+  $("absent").addEventListener("change", function () {
+    api("action=set&pin=" + encodeURIComponent(getPin()) + "&absent=" + (this.checked ? "1" : "0"))
+      .then(function (s) { if (s.error) { toast(s.error); refresh(); } else { paintState(s); toast(s.absent ? "Mode absent activé" : "Mode absent désactivé"); } })
+      .catch(function () { toast("Échec"); });
+  });
+
+  $("saveVeille").addEventListener("click", function () {
+    var p = "action=set&pin=" + encodeURIComponent(getPin()) +
+      "&v_enabled=" + ($("vEnabled").checked ? "1" : "0") +
+      "&v_start=" + encodeURIComponent($("vStart").value || "23:00") +
+      "&v_end=" + encodeURIComponent($("vEnd").value || "07:00");
+    api(p).then(function (s) { if (s.error) toast(s.error); else { paintState(s); toast("Veille enregistrée"); } }).catch(function () { toast("Échec"); });
+  });
+
+  $("saveCfg").addEventListener("click", function () {
+    try { localStorage.setItem(URLK, $("url").value.trim().replace(/\/$/, "")); localStorage.setItem(PINK, $("pin").value.trim()); } catch (e) {}
+    toast("Réglages enregistrés"); refresh();
+  });
+
+  (function init() { $("url").value = getUrl(); $("pin").value = getPin(); refresh(); setInterval(refresh, 15000); })();
+</script>
+</body>
+</html>
