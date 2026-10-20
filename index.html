@@ -67,19 +67,23 @@
 </head>
 <body>
 
-  <!-- Ordre : marées, météo, voiture (retour) -->
-  <iframe class="slide" id="s0" src="slide-marees.html"></iframe>
-  <iframe class="slide" id="s1" src="meteo-mariniere.html"></iframe>
-  <iframe class="slide" id="s2" src="slide-retour.html"></iframe>
+  <!-- Ordre : accueil, marées, météo, voiture (retour) -->
+  <iframe class="slide" id="s0" src="slide-accueil.html"></iframe>
+  <iframe class="slide" id="s1" src="slide-marees.html"></iframe>
+  <iframe class="slide" id="s2" src="meteo-mariniere.html"></iframe>
+  <iframe class="slide" id="s3" src="slide-retour.html"></iframe>
 
   <div id="nav">
-    <div class="navBtn" data-i="0" title="Marées">
+    <div class="navBtn" data-i="0" title="Accueil">
+      <svg viewBox="0 0 24 24"><path class="ic" d="M4 11.5 12 4l8 7.5"/><path class="ic" d="M6 10.5V20h12v-9.5"/><path class="ic" d="M10 20v-5h4v5"/></svg>
+    </div>
+    <div class="navBtn" data-i="1" title="Marées">
       <svg viewBox="0 0 24 24"><path class="ic" d="M2 15c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2M2 20c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2"/></svg>
     </div>
-    <div class="navBtn" data-i="1" title="Météo marine">
+    <div class="navBtn" data-i="2" title="Météo marine">
       <svg viewBox="0 0 24 24"><circle class="ic" cx="9" cy="8.5" r="3"/><path class="ic" d="M9 3.6v1.5M4.1 8.5h1.5M5.3 4.8l1.1 1.1M12.7 4.8l-1.1 1.1"/><path class="ic" d="M7.5 19h9.3a3.1 3.1 0 0 0 .1-6.2 4 4 0 0 0-7.6-1A3.3 3.3 0 0 0 7.5 19z"/></svg>
     </div>
-    <div class="navBtn" data-i="2" title="Retour">
+    <div class="navBtn" data-i="3" title="Retour">
       <svg viewBox="0 0 24 24"><path class="ic" d="M3 15v-2.6l2.2-4.1a1.6 1.6 0 0 1 1.4-.8h6.3a1.6 1.6 0 0 1 1.2.6L17.9 11H20a1 1 0 0 1 1 1v3"/><path class="ic" d="M3 15h2.2M9.4 15h5.2M18.8 15H21M8 11h6.2"/><circle class="ic" cx="7.3" cy="15.2" r="1.8"/><circle class="ic" cx="16.7" cy="15.2" r="1.8"/></svg>
     </div>
   </div>
@@ -89,7 +93,7 @@
 <script>
 /* ---------- réglages ---------- */
 var ROTATE_MS = 30000;   /* 30 s par slide */
-var N = 3;
+var N = 4;
 
 /* ---------- thème clair/sombre auto (lever/coucher du soleil) ----------
    La barre bascule en même temps que les slides (chaque iframe calcule
@@ -127,7 +131,7 @@ setInterval(applyTheme, 10 * 60000);
 
 var cur = -1, timer = null, idleTimer = null, start = 0, paused = false;
 var PAUSE_MS = 60000;   /* reprise auto après 60 s sans toucher */
-var slides = [document.getElementById("s0"), document.getElementById("s1"), document.getElementById("s2")];
+var slides = [document.getElementById("s0"), document.getElementById("s1"), document.getElementById("s2"), document.getElementById("s3")];
 var btns = document.getElementsByClassName("navBtn");
 var progFill = document.getElementById("progFill");
 var pauseBadge = document.getElementById("pauseBadge");
@@ -147,7 +151,7 @@ function show(i) {
    (retour) n'entre dans la rotation que le dimanche. Elle reste
    atteignable en cliquant son icône n'importe quel jour. */
 function rotationList() {
-  return (new Date().getDay() === 0) ? [0, 1, 2] : [0, 1];
+  return (new Date().getDay() === 0) ? [0, 1, 2, 3] : [0, 1, 2];
 }
 function next() {
   var list = rotationList();

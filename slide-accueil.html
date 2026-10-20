@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accueil</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Palette du cadre La Plaine (sombre par défaut, clair en journée). */
+  :root {
+    --bg:#0c2430; --panel:#0f2a36; --ink:#eef3f1; --muted:#9fb8be; --faint:#7f9ba3;
+    --faint2:#5f7f89; --line:#23495a; --accent:#7cc4d6; --gold:#f2b544; --goldbg:rgba(242,181,68,0.14);
+    --t1:#f2b544; --t2:#7cc4d6; --t3:#8fd3a0;
+  }
+  :root[data-theme="light"] {
+    --bg:#e9eef4; --panel:#f7f9fb; --ink:#14254a; --muted:#55657f; --faint:#6b7a92;
+    --faint2:#8b97aa; --line:#d5dce6; --accent:#2c5aa0; --gold:#e08a1e; --goldbg:rgba(224,138,30,0.14);
+    --t1:#e08a1e; --t2:#2c5aa0; --t3:#2f8f6e;
+  }
+  html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; }
+  body { font-family: "Barlow", "Roboto", "Helvetica Neue", Arial, sans-serif; color: var(--ink); }
+  #stage { position: absolute; left: 0; top: 0; width: 1280px; height: 800px; background: var(--bg);
+           -webkit-transform-origin: 0 0; transform-origin: 0 0; }
+  .cond { font-family: "Barlow Condensed", "Roboto Condensed", "Arial Narrow", sans-serif; }
+
+  #grid { display: -webkit-flex; display: flex; padding: 44px 48px; -webkit-box-sizing: border-box; box-sizing: border-box; height: 800px; }
+
+  /* Colonne gauche : salutation + météo */
+  #left { width: 460px; -webkit-flex: none; flex: none; display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; margin-right: 26px; }
+  #hello { font-size: 68px; font-weight: 700; line-height: 0.98; }
+  #date { font-size: 26px; color: var(--muted); margin-top: 12px; text-transform: capitalize; }
+
+  #wcard { margin-top: 26px; -webkit-flex: 1; flex: 1; background: var(--panel); border-radius: 22px; padding: 24px 26px;
+           display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; }
+  #wlbl { font-size: 17px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; font-weight: 600; }
+  #wTop { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; margin-top: 10px; }
+  #wIcon { width: 96px; height: 96px; -webkit-flex: none; flex: none; }
+  #wTemp { font-size: 90px; font-weight: 600; line-height: 0.9; margin-left: 6px; }
+  #wTemp span { font-size: 34px; vertical-align: 36px; color: var(--muted); }
+  #wCond { font-size: 30px; font-weight: 600; margin-top: 8px; }
+  #wHL { font-size: 21px; color: var(--muted); margin-top: 4px; }
+  #wHL b { color: var(--ink); font-weight: 600; }
+  #rainHint { margin-top: 16px; background: var(--goldbg); border-radius: 12px; padding: 11px 16px; font-size: 20px; font-weight: 500;
+              display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; }
+  #rainHint svg { width: 24px; height: 24px; margin-right: 12px; -webkit-flex: none; flex: none; }
+  #rainHint svg path { fill: none; stroke: var(--gold); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  #wHours { margin-top: auto; padding-top: 18px; border-top: 1px solid var(--line); }
+  #wHoursLbl { font-size: 15px; letter-spacing: 1px; color: var(--faint); text-transform: uppercase; margin-bottom: 8px; }
+  #hoursRow { display: -webkit-flex; display: flex; }
+  .hr { -webkit-flex: 1; flex: 1; text-align: center; }
+  .hr .hl { font-size: 17px; color: var(--muted); }
+  .hr .hi { height: 38px; margin: 4px 0 2px; }
+  .hr .ht { font-size: 21px; font-weight: 600; }
+
+  /* Colonne droite : tuiles */
+  #right { -webkit-flex: 1; flex: 1; display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; }
+  .tile { background: var(--panel); border-radius: 22px; padding: 24px 28px; }
+  .tLbl { font-size: 17px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; font-weight: 600; }
+
+  #thermos { margin-bottom: 26px; }
+  #thRow { display: -webkit-flex; display: flex; margin-top: 16px; }
+  .th { -webkit-flex: 1; flex: 1; }
+  .thName { font-size: 21px; color: var(--muted); display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; }
+  .thDot { width: 12px; height: 12px; border-radius: 6px; margin-right: 9px; -webkit-flex: none; flex: none; }
+  .thVal { font-size: 54px; font-weight: 700; line-height: 1; margin-top: 6px; }
+  .thVal span { font-size: 24px; color: var(--muted); }
+
+  #tides { -webkit-flex: 1; flex: 1; display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; }
+  #tidesBody { -webkit-flex: 1; flex: 1; display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; -webkit-justify-content: center; justify-content: center; }
+  .tide { display: -webkit-flex; display: flex; -webkit-align-items: baseline; align-items: baseline; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .tide:last-child { border-bottom: 0; }
+  .tideArrow { font-size: 40px; -webkit-flex: none; flex: none; margin-right: 20px; line-height: 1; }
+  .tideArrow.up { color: var(--accent); }
+  .tideArrow.down { color: var(--gold); }
+  .tideWhat { -webkit-flex: 1; flex: 1; }
+  .tideWhat .big { font-size: 30px; font-weight: 600; }
+  .tideWhat .sub { font-size: 19px; color: var(--muted); margin-top: 2px; }
+  .tideTime { font-size: 46px; font-weight: 700; white-space: nowrap; }
+  .tideTime .coef { font-size: 20px; color: var(--muted); font-weight: 600; display: block; text-align: right; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="grid">
+    <div id="left">
+      <div id="hello"></div>
+      <div id="date"></div>
+      <div id="wcard">
+        <div id="wlbl">Météo · La Plaine-sur-Mer</div>
+        <div id="wTop"><div id="wIcon"></div><div id="wTemp"></div></div>
+        <div id="wCond"></div>
+        <div id="wHL"></div>
+        <div id="rainHint"></div>
+        <div id="wHours"><div id="wHoursLbl">Prochaines heures</div><div id="hoursRow"></div></div>
+      </div>
+    </div>
+
+    <div id="right">
+      <div class="tile" id="thermos">
+        <div class="tLbl">Thermomètres</div>
+        <div id="thRow"></div>
+      </div>
+      <div class="tile" id="tides">
+        <div class="tLbl">Les marées</div>
+        <div id="tidesBody"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var LAT = 47.1375, LON = -2.1876;
+var TIDES_URL = "https://maree.boisbourdinnathande.workers.dev/";
+var THERMO_URL = "";   /* Worker Tuya maison (vide = fausses valeurs) */
+var REFRESH_MIN = 15;
+
+function el(id) { return document.getElementById(id); }
+function pad(n) { return n < 10 ? "0" + n : "" + n; }
+function hhmm(d) { return pad(d.getHours()) + ":" + pad(d.getMinutes()); }
+var JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+var MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+
+/* ---------- thème (auto lever/coucher) ---------- */
+function sunTimes(date, lat, lon) {
+  var rad = Math.PI / 180, deg = 180 / Math.PI;
+  var start = new Date(date.getFullYear(), 0, 0);
+  var N = Math.floor((date - start) / 86400000);
+  function calc(isRise) {
+    var lngHour = lon / 15, t = N + ((isRise ? 6 : 18) - lngHour) / 24;
+    var M = (0.9856 * t) - 3.289;
+    var L = M + (1.916 * Math.sin(rad * M)) + (0.020 * Math.sin(rad * 2 * M)) + 282.634; L = (L % 360 + 360) % 360;
+    var RA = deg * Math.atan(0.91764 * Math.tan(rad * L)); RA = (RA % 360 + 360) % 360;
+    RA = (RA + (Math.floor(L / 90) * 90 - Math.floor(RA / 90) * 90)) / 15;
+    var sinDec = 0.39782 * Math.sin(rad * L), cosDec = Math.cos(Math.asin(sinDec));
+    var cosH = (Math.cos(rad * 90.833) - (sinDec * Math.sin(rad * lat))) / (cosDec * Math.cos(rad * lat));
+    if (cosH > 1 || cosH < -1) return null;
+    var H = (isRise ? 360 - deg * Math.acos(cosH) : deg * Math.acos(cosH)) / 15;
+    var UT = ((H + RA - (0.06571 * t) - 6.622) % 24 + 24) % 24;
+    var d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0));
+    d.setUTCMinutes(Math.round(UT * 60)); return d;
+  }
+  return { rise: calc(true), set: calc(false) };
+}
+function currentTheme() {
+  var ov = (location.search.match(/theme=(light|dark)/) || [])[1]; if (ov) return ov;
+  var now = new Date(), s = sunTimes(now, LAT, LON);
+  if (!s.rise || !s.set) { var h = now.getHours(); return (h >= 8 && h < 20) ? "light" : "dark"; }
+  return (now >= s.rise && now < s.set) ? "light" : "dark";
+}
+function applyTheme() { document.documentElement.setAttribute("data-theme", currentTheme()); }
+function C(k) {
+  var P = { light: { sun:"#e08a1e", cloud:"#8fa0b5", rain:"#2c5aa0", snow:"#6b7a92", moon:"#c9a227" },
+            dark:  { sun:"#f2b544", cloud:"#8597a6", rain:"#7cc4d6", snow:"#dfeaee", moon:"#e8dfae" } };
+  return P[currentTheme()][k];
+}
+
+/* ---------- icônes météo ---------- */
+function wIcon(code, px) {
+  var s = C("sun"), c = C("cloud"), r = C("rain"), sn = C("snow");
+  function sun(cx, cy, rr) {
+    var o = '<circle cx="' + cx + '" cy="' + cy + '" r="' + rr + '" fill="' + s + '"/>';
+    for (var i = 0; i < 8; i++) { var a = i * Math.PI / 4; o += '<line x1="' + (cx + Math.cos(a) * (rr + 6)) + '" y1="' + (cy + Math.sin(a) * (rr + 6)) + '" x2="' + (cx + Math.cos(a) * (rr + 13)) + '" y2="' + (cy + Math.sin(a) * (rr + 13)) + '" stroke="' + s + '" stroke-width="6" stroke-linecap="round"/>'; }
+    return o;
+  }
+  var cloud = '<path d="M38 84h50a19 19 0 0 0 2-38 26 26 0 0 0-50-6 21 21 0 0 0-2 44z" fill="' + c + '"/>';
+  var g = '';
+  if (code === 0 || code === 1) g = sun(64, 62, 30);
+  else if (code === 2) g = sun(44, 46, 22) + cloud;
+  else if (code === 3) g = cloud;
+  else if (code === 45 || code === 48) g = cloud + '<line x1="34" y1="94" x2="94" y2="94" stroke="' + c + '" stroke-width="6" stroke-linecap="round"/><line x1="40" y1="104" x2="88" y2="104" stroke="' + c + '" stroke-width="6" stroke-linecap="round"/>';
+  else if (code >= 51 && code <= 67) g = cloud + '<line x1="46" y1="92" x2="40" y2="108" stroke="' + r + '" stroke-width="6" stroke-linecap="round"/><line x1="64" y1="92" x2="58" y2="108" stroke="' + r + '" stroke-width="6" stroke-linecap="round"/><line x1="82" y1="92" x2="76" y2="108" stroke="' + r + '" stroke-width="6" stroke-linecap="round"/>';
+  else if (code >= 71 && code <= 77) g = cloud + '<circle cx="50" cy="100" r="4" fill="' + sn + '"/><circle cx="68" cy="100" r="4" fill="' + sn + '"/>';
+  else if (code >= 80 && code <= 82) g = cloud + '<line x1="46" y1="92" x2="40" y2="110" stroke="' + r + '" stroke-width="7" stroke-linecap="round"/><line x1="66" y1="92" x2="60" y2="110" stroke="' + r + '" stroke-width="7" stroke-linecap="round"/><line x1="86" y1="92" x2="80" y2="110" stroke="' + r + '" stroke-width="7" stroke-linecap="round"/>';
+  else if (code >= 95) g = cloud + '<path d="M60 90l-10 16h10l-8 14" fill="none" stroke="' + s + '" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>';
+  else g = cloud;
+  return '<svg viewBox="0 0 128 128" width="' + px + '" height="' + px + '">' + g + '</svg>';
+}
+function moonIcon(code, px) {
+  var m = C("moon"), c = C("cloud");
+  if (code === 2) return '<svg viewBox="0 0 128 128" width="' + px + '" height="' + px + '"><path d="M70 50a22 22 0 1 1-22-22 18 18 0 0 0 22 22z" fill="' + m + '"/><path d="M42 90h46a17 17 0 0 0 2-34 24 24 0 0 0-30-10 19 19 0 0 0-18 44z" fill="' + c + '"/></svg>';
+  return '<svg viewBox="0 0 128 128" width="' + px + '" height="' + px + '"><path d="M78 64a30 30 0 1 1-30-30 24 24 0 0 0 30 30z" fill="' + m + '"/></svg>';
+}
+function condText(code) {
+  if (code === 0) return "Ciel dégagé";
+  if (code === 1) return "Plutôt dégagé";
+  if (code === 2) return "Nuageux";
+  if (code === 3) return "Couvert";
+  if (code === 45 || code === 48) return "Brouillard";
+  if (code >= 51 && code <= 57) return "Bruine";
+  if (code >= 61 && code <= 67) return "Pluie";
+  if (code >= 71 && code <= 77) return "Neige";
+  if (code >= 80 && code <= 82) return "Averses";
+  if (code >= 95) return "Orage";
+  return "—";
+}
+function greeting(h) {
+  if (h >= 5 && h < 12) return "Bonjour";
+  if (h >= 12 && h < 18) return "Bon après-midi";
+  if (h >= 18 && h < 23) return "Bonsoir";
+  return "Bonne nuit";
+}
+
+var WX = null, TH = null, TIDES = null, lastLoad = null;
+
+function mockThermos() { return [{ name: "Pièce de vie", t: 20 }, { name: "Dortoir", t: 18 }, { name: "Cellier", t: 14 }]; }
+
+/* ---------- rendu météo ---------- */
+function renderWeather() {
+  var now = new Date();
+  el("hello").innerHTML = greeting(now.getHours());
+  el("date").innerHTML = JOURS[now.getDay()] + " " + now.getDate() + " " + MOIS[now.getMonth()];
+  if (!WX) { el("wCond").innerHTML = "Météo indisponible"; return; }
+  el("wIcon").innerHTML = wIcon(WX.code, 96);
+  el("wTemp").innerHTML = Math.round(WX.temp) + "<span>°</span>";
+  el("wCond").innerHTML = condText(WX.code);
+  el("wHL").innerHTML = "Max <b>" + Math.round(WX.tmax) + "°</b> · Min <b>" + Math.round(WX.tmin) + "°</b>";
+  var umb = '<svg viewBox="0 0 24 24"><path d="M12 4V2.4"/><path d="M4 11a8 8 0 0 1 16 0z"/><path d="M12 11v7a2.2 2.2 0 0 0 4.3 0.6"/></svg>';
+  el("rainHint").innerHTML = umb + WX.hint;
+  el("rainHint").style.display = WX.hint ? "flex" : "none";
+  var h = "";
+  for (var i = 0; i < WX.cols.length; i++) {
+    var col = WX.cols[i], ic = (col.night && col.code <= 2) ? moonIcon(col.code, 38) : wIcon(col.code, 38);
+    h += '<div class="hr"><div class="hl">' + col.label + '</div><div class="hi">' + ic + '</div><div class="ht">' + Math.round(col.temp) + '°</div></div>';
+  }
+  el("hoursRow").innerHTML = h;
+}
+
+function renderThermos() {
+  var list = TH || mockThermos(), dots = ["--t1", "--t2", "--t3"], h = "";
+  for (var i = 0; i < list.length; i++) {
+    var col = "var(" + (dots[i] || "--t1") + ")";
+    h += '<div class="th"><div class="thName"><span class="thDot" style="background:' + col + '"></span>' + list[i].name + '</div>' +
+         '<div class="thVal">' + (list[i].t == null ? "–" : Math.round(list[i].t)) + '<span>°</span></div></div>';
+  }
+  el("thRow").innerHTML = h;
+}
+
+function renderTides() {
+  if (!TIDES) { el("tidesBody").innerHTML = '<div class="tide"><div class="tideWhat"><div class="sub">Chargement…</div></div></div>'; return; }
+  var now = new Date(), nextPM = null, nextBM = null;
+  for (var i = 0; i < TIDES.length; i++) {
+    if (TIDES[i].date < now) continue;
+    if (!nextPM && TIDES[i].type === "PM") nextPM = TIDES[i];
+    if (!nextBM && TIDES[i].type === "BM") nextBM = TIDES[i];
+  }
+  function row(e, up) {
+    if (!e) return "";
+    var arr = up ? '<div class="tideArrow up">&#8599;</div>' : '<div class="tideArrow down">&#8600;</div>';
+    var sub = (e.height != null ? e.height.toFixed(2).replace(".", ",") + " m" : "");
+    var coef = (up && e.coef) ? '<span class="coef">coef ' + e.coef + '</span>' : "";
+    return '<div class="tide">' + arr + '<div class="tideWhat"><div class="big">' + (up ? "Marée haute" : "Marée basse") + '</div><div class="sub">' + sub + '</div></div>' +
+           '<div class="tideTime">' + hhmm(e.date) + coef + '</div></div>';
+  }
+  el("tidesBody").innerHTML = row(nextPM, true) + row(nextBM, false);
+}
+
+function render() { applyTheme(); renderWeather(); renderThermos(); renderTides(); }
+
+/* ---------- chargement ---------- */
+function buildCols(j) {
+  var H = j.hourly, now = new Date(), i, idx = -1;
+  for (i = 0; i < H.time.length; i++) { var d = new Date(H.time[i]); if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate() && d.getHours() === now.getHours()) { idx = i; break; } }
+  if (idx < 0) idx = 0;
+  var sr = (j.daily && j.daily.sunrise) ? new Date(j.daily.sunrise[0]).getTime() : 0;
+  var ss = (j.daily && j.daily.sunset) ? new Date(j.daily.sunset[0]).getTime() : 0;
+  var cols = [];
+  for (var k = 0; k < 5; k++) {
+    var p = idx + k * 2; if (p >= H.time.length) break;
+    var dt = new Date(H.time[p]), tm = dt.getTime();
+    cols.push({ label: dt.getHours() + " h", code: H.weather_code[p], temp: H.temperature_2m[p], night: (sr && ss) ? (tm < sr || tm >= ss) : (dt.getHours() < 7 || dt.getHours() >= 20) });
+  }
+  return cols;
+}
+function rainHint(j) {
+  var H = j.hourly, now = new Date(), nowH = now.getHours();
+  for (var k = 0; k < H.time.length; k++) {
+    var d = new Date(H.time[k]);
+    if (d.getDate() !== now.getDate() || d.getMonth() !== now.getMonth()) continue;
+    if (d.getHours() < nowH) continue;
+    var prob = H.precipitation_probability ? H.precipitation_probability[k] : null, pr = H.precipitation ? H.precipitation[k] : 0;
+    if (d.getHours() === nowH && pr >= 0.2) return "Pluie en cours";
+    if ((prob != null && prob >= 50) || pr >= 0.5) return "Sec jusqu'à " + d.getHours() + " h, puis pluie";
+  }
+  return "Pas de pluie prévue aujourd'hui";
+}
+function loadWeather() {
+  var url = "https://api.open-meteo.com/v1/forecast?latitude=" + LAT + "&longitude=" + LON +
+    "&current=temperature_2m,weather_code&hourly=temperature_2m,weather_code,precipitation_probability,precipitation" +
+    "&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=Europe%2FParis&forecast_days=1";
+  var x = new XMLHttpRequest(); x.open("GET", url); x.timeout = 12000;
+  x.onload = function () {
+    if (x.status === 200) { try {
+      var j = JSON.parse(x.responseText), c = j.current, d = j.daily;
+      WX = { temp: c.temperature_2m, code: c.weather_code, tmax: d.temperature_2m_max[0], tmin: d.temperature_2m_min[0], cols: buildCols(j), hint: rainHint(j) };
+      lastLoad = new Date(); render();
+    } catch (e) {} }
+  };
+  x.send();
+}
+function loadTides() {
+  if (!TIDES_URL) return;
+  var x = new XMLHttpRequest(); x.open("GET", TIDES_URL); x.timeout = 12000;
+  x.onload = function () {
+    if (x.status === 200) { try {
+      var p = JSON.parse(x.responseText), out = [];
+      for (var i = 0; i < p.data.length; i++) { var day = p.data[i], dd = day.date.split("-"); for (var jx = 0; jx < day.extrema.length; jx++) { var e = day.extrema[jx], t = e.time.split(":"); out.push({ type: e.type, height: e.height, coef: e.coef, date: new Date(+dd[0], +dd[1] - 1, +dd[2], +t[0], +t[1]) }); } }
+      out.sort(function (a, b) { return a.date - b.date; });
+      TIDES = out; render();
+    } catch (e) {} }
+  };
+  x.send();
+}
+function loadThermos() {
+  if (!THERMO_URL) { TH = null; render(); return; }
+  var x = new XMLHttpRequest(); x.open("GET", THERMO_URL); x.timeout = 12000;
+  x.onload = function () { if (x.status === 200) { try { TH = JSON.parse(x.responseText); render(); } catch (e) {} } };
+  x.send();
+}
+function loadAll() { loadWeather(); loadTides(); loadThermos(); }
+
+function fit() {
+  var s = Math.min(window.innerWidth / 1280, window.innerHeight / 800), st = el("stage").style;
+  st.webkitTransform = st.transform = "scale(" + s + ")";
+  st.left = ((window.innerWidth - 1280 * s) / 2) + "px";
+  st.top = ((window.innerHeight - 800 * s) / 2) + "px";
+}
+window.onresize = fit; fit(); applyTheme();
+
+render();
+loadAll();
+function tick() { render(); setTimeout(tick, 60000 - (Date.now() % 60000) + 50); }
+setTimeout(tick, 60000 - (Date.now() % 60000) + 50);
+setInterval(loadAll, REFRESH_MIN * 60000);
+</script>
+</body>
+</html>
