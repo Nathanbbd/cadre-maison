@@ -6,56 +6,63 @@
 <title>Marées, La Plaine-sur-Mer</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-  /* Volontairement écrit pour un WebView Android 6 : flexbox uniquement,
-     pas de variables CSS, pas de grid, couleurs en #rrggbb / rgba(). */
-  html, body { margin: 0; height: 100%; background: #0c2430; overflow: hidden; }
-  body { font-family: "Barlow", "Roboto", "Helvetica Neue", Arial, sans-serif; color: #eef3f1; }
+  /* Thème clair/sombre via variables CSS (OK sur WebView Chrome 106). */
+  :root {
+    --bg:#0c2430; --panel:#0f2a36; --ink:#eef3f1; --muted:#9fb8be; --faint:#7f9ba3;
+    --faint2:#5f7f89; --water:#2e6f86; --wave:#7cc4d6; --sand:#d9c9a3; --gold:#f2b544;
+    --line:#23495a; --goldbg:rgba(242,181,68,0.12);
+  }
+  :root[data-theme="light"] {
+    --bg:#f2f6fb; --panel:#ffffff; --ink:#14254a; --muted:#55657f; --faint:#6b7a92;
+    --faint2:#8b97aa; --water:#8fb9c9; --wave:#2c5aa0; --sand:#b0894a; --gold:#e08a1e;
+    --line:#d5dce6; --goldbg:rgba(224,138,30,0.14);
+  }
+
+  html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; }
+  body { font-family: "Barlow", "Roboto", "Helvetica Neue", Arial, sans-serif; color: var(--ink); }
   #stage {
     position: absolute; left: 0; top: 0; width: 1280px; height: 800px;
-    background: #0f2a36; -webkit-transform-origin: 0 0; transform-origin: 0 0;
+    background: var(--panel); -webkit-transform-origin: 0 0; transform-origin: 0 0;
   }
   .cond { font-family: "Barlow Condensed", "Roboto Condensed", "Arial Narrow", sans-serif; }
 
-  /* Haut : état de la marée */
   #top { display: -webkit-flex; display: flex; padding: 44px 56px 0; height: 250px; box-sizing: border-box; }
   #state { -webkit-flex: 1; flex: 1; }
-  #place { font-size: 22px; color: #9fb8be; margin: 0 0 6px; font-weight: 500; }
+  #place { font-size: 22px; color: var(--muted); margin: 0 0 6px; font-weight: 500; }
   #trend { font-size: 64px; line-height: 1; margin: 0; font-weight: 600; letter-spacing: -0.5px; }
-  #trend .arrow { color: #7cc4d6; margin-right: 10px; }
-  #next { font-size: 26px; color: #d9c9a3; margin: 18px 0 0; }
-  #next b { color: #eef3f1; font-weight: 600; }
+  #trend .arrow { color: var(--wave); margin-right: 10px; }
+  #next { font-size: 26px; color: var(--sand); margin: 18px 0 0; }
+  #next b { color: var(--ink); font-weight: 600; }
 
   #now { width: 230px; text-align: right; padding-top: 6px; }
   #height { font-size: 112px; line-height: 0.9; font-weight: 600; }
-  #height small { font-size: 40px; font-weight: 500; color: #9fb8be; margin-left: 4px; }
-  #heightLbl { font-size: 18px; color: #9fb8be; margin-top: 8px; }
+  #height small { font-size: 40px; font-weight: 500; color: var(--muted); margin-left: 4px; }
+  #heightLbl { font-size: 18px; color: var(--muted); margin-top: 8px; }
 
   #coef {
     width: 170px; margin-left: 40px; height: 170px; border-radius: 85px;
-    border: 3px solid #2e6f86; text-align: center; box-sizing: border-box; padding-top: 26px;
+    border: 3px solid var(--water); text-align: center; box-sizing: border-box; padding-top: 26px;
   }
-  #coef.big { border-color: #f2b544; background: rgba(242,181,68,0.12); }
+  #coef.big { border-color: var(--gold); background: var(--goldbg); }
   #coefVal { font-size: 78px; line-height: 1; font-weight: 700; }
-  #coef.big #coefVal { color: #f2b544; }
-  #coefLbl { font-size: 17px; color: #9fb8be; margin-top: 4px; }
+  #coef.big #coefVal { color: var(--gold); }
+  #coefLbl { font-size: 17px; color: var(--muted); margin-top: 4px; }
 
-  /* Courbe */
   #curveWrap { position: relative; height: 330px; margin: 0 56px; }
   #curve { display: block; }
 
-  /* Bas : coefficients des prochains jours */
   #days { display: -webkit-flex; display: flex; margin: 10px 56px 0; height: 150px; }
-  .day { -webkit-flex: 1; flex: 1; padding: 14px 0 0 16px; border-left: 1px solid #23495a; }
+  .day { -webkit-flex: 1; flex: 1; padding: 14px 0 0 16px; border-left: 1px solid var(--line); }
   .day:first-child { border-left: 0; padding-left: 0; }
-  .dName { font-size: 19px; color: #9fb8be; font-weight: 500; }
+  .dName { font-size: 19px; color: var(--muted); font-weight: 500; }
   .dCoefs { font-size: 40px; font-weight: 600; margin-top: 4px; white-space: nowrap; }
   .dCoefs span { display: inline-block; min-width: 58px; }
-  .dCoefs .gm { color: #f2b544; }
-  .dPm { font-size: 16px; color: #9fb8be; margin-top: 4px; }
-  .dBm { font-size: 16px; color: #7f9ba3; margin-top: 1px; }
+  .dCoefs .gm { color: var(--gold); }
+  .dPm { font-size: 16px; color: var(--muted); margin-top: 4px; }
+  .dBm { font-size: 16px; color: var(--faint); margin-top: 1px; }
 
-  #credit { position: absolute; left: 56px; bottom: 14px; font-size: 13px; color: #5f7f89; }
-  #updated { position: absolute; right: 56px; bottom: 14px; font-size: 13px; color: #5f7f89; }
+  #credit { position: absolute; left: 56px; bottom: 14px; font-size: 13px; color: var(--faint2); }
+  #updated { position: absolute; right: 56px; bottom: 14px; font-size: 13px; color: var(--faint2); }
 </style>
 </head>
 <body>
@@ -85,17 +92,57 @@
 </div>
 
 <script>
-/* ============================================================
-   CONFIG
-   En production, DATA_URL pointe vers ton Cloudflare Worker, qui
-   renvoie la réponse de api-maree.fr /tide-extrema (format identique).
-   Laisse vide pour utiliser les données simulées.
-   ============================================================ */
 var DATA_URL = "https://maree.boisbourdinnathande.workers.dev/";
-var REFRESH_DATA_MIN = 30;   // rechargement des données
+var REFRESH_DATA_MIN = 30;
 var DAYS_SHOWN = 6;
+var LAT = 47.1375, LON = -2.1876;
 
-/* ---------- utilitaires (ES5, pour le vieux WebView) ---------- */
+/* ---------- thème jour/nuit auto (lever/coucher du soleil) ---------- */
+function sunTimes(date, lat, lon) {
+  var rad = Math.PI / 180, deg = 180 / Math.PI;
+  var start = new Date(date.getFullYear(), 0, 0);
+  var N = Math.floor((date - start) / 86400000);
+  function calc(isRise) {
+    var lngHour = lon / 15;
+    var t = N + ((isRise ? 6 : 18) - lngHour) / 24;
+    var M = (0.9856 * t) - 3.289;
+    var L = M + (1.916 * Math.sin(rad * M)) + (0.020 * Math.sin(rad * 2 * M)) + 282.634;
+    L = (L % 360 + 360) % 360;
+    var RA = deg * Math.atan(0.91764 * Math.tan(rad * L));
+    RA = (RA % 360 + 360) % 360;
+    RA = RA + (Math.floor(L / 90) * 90 - Math.floor(RA / 90) * 90);
+    RA = RA / 15;
+    var sinDec = 0.39782 * Math.sin(rad * L);
+    var cosDec = Math.cos(Math.asin(sinDec));
+    var cosH = (Math.cos(rad * 90.833) - (sinDec * Math.sin(rad * lat))) / (cosDec * Math.cos(rad * lat));
+    if (cosH > 1 || cosH < -1) return null;
+    var H = isRise ? 360 - deg * Math.acos(cosH) : deg * Math.acos(cosH);
+    H = H / 15;
+    var T = H + RA - (0.06571 * t) - 6.622;
+    var UT = ((T - lngHour) % 24 + 24) % 24;
+    var d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0));
+    d.setUTCMinutes(Math.round(UT * 60));
+    return d;
+  }
+  return { rise: calc(true), set: calc(false) };
+}
+function currentTheme() {
+  var ov = (location.search.match(/theme=(light|dark)/) || [])[1];
+  if (ov) return ov;  /* ?theme=light ou ?theme=dark pour prévisualiser */
+  var now = new Date(), s = sunTimes(now, LAT, LON);
+  if (!s.rise || !s.set) { var h = now.getHours(); return (h >= 8 && h < 20) ? "light" : "dark"; }
+  return (now >= s.rise && now < s.set) ? "light" : "dark";
+}
+var PAL = {
+  dark:  { sand:"#d9c9a3", water:"#2e6f86", wave:"#7cc4d6", grid:"#ffffff", gridOp:"0.06",
+           ink:"#eef3f1", muted:"#9fb8be", faint:"#7f9ba3", gold:"#f2b544", panel:"#0f2a36" },
+  light: { sand:"#b0894a", water:"#8fb9c9", wave:"#2c5aa0", grid:"#14254a", gridOp:"0.08",
+           ink:"#14254a", muted:"#55657f", faint:"#6b7a92", gold:"#e08a1e", panel:"#f7f9fb" }
+};
+function C(k) { return PAL[currentTheme()][k]; }
+function applyTheme() { document.documentElement.setAttribute("data-theme", currentTheme()); }
+
+/* ---------- utilitaires ---------- */
 var JOURS = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
 function pad(n) { return n < 10 ? "0" + n : "" + n; }
 function hhmm(d) { return pad(d.getHours()) + ":" + pad(d.getMinutes()); }
@@ -103,7 +150,6 @@ function fr(n, dec) { return n.toFixed(dec).replace(".", ","); }
 function ymd(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
 function el(id) { return document.getElementById(id); }
 
-/* Convertit la réponse api-maree en liste plate d'extrema avec Date */
 function flatten(payload) {
   var out = [];
   for (var i = 0; i < payload.data.length; i++) {
@@ -111,18 +157,14 @@ function flatten(payload) {
     var p = day.date.split("-");
     for (var j = 0; j < day.extrema.length; j++) {
       var e = day.extrema[j], t = e.time.split(":");
-      out.push({
-        type: e.type, height: e.height, coef: e.coef,
-        date: new Date(+p[0], +p[1] - 1, +p[2], +t[0], +t[1])
-      });
+      out.push({ type: e.type, height: e.height, coef: e.coef,
+        date: new Date(+p[0], +p[1] - 1, +p[2], +t[0], +t[1]) });
     }
   }
   out.sort(function (a, b) { return a.date - b.date; });
   return out;
 }
 
-/* Hauteur entre deux extrema : interpolation en cosinus
-   (même principe que la règle des douzièmes). */
 function heightAt(ext, t) {
   for (var i = 0; i < ext.length - 1; i++) {
     var a = ext[i], b = ext[i + 1];
@@ -134,7 +176,6 @@ function heightAt(ext, t) {
   return null;
 }
 
-/* ---------- données simulées (format api-maree /tide-extrema) ---------- */
 function mockPayload() {
   var start = new Date(); start.setHours(0, 0, 0, 0);
   start = new Date(start.getTime() - 86400000);
@@ -151,7 +192,6 @@ function mockPayload() {
     if (cur < prev && cur <= nxt) ext.push({ type: "BM", t: t, height: cur });
     prev = cur; cur = nxt;
   }
-  // coefficient estimé à partir du marnage (calé sur Pointe de Saint-Gildas)
   for (var i = 0; i < ext.length; i++) {
     if (ext[i].type !== "PM") continue;
     var lo = ext[i + 1] || ext[i - 1];
@@ -187,14 +227,10 @@ function renderTop(now) {
   var dur = mins >= 60 ? Math.floor(mins / 60) + " h " + pad(mins % 60) : mins + " min";
   el("next").innerHTML = (rising ? "Pleine mer" : "Basse mer") + " à <b>" + hhmm(next.date) +
     "</b>, " + fr(next.height, 2) + " m, dans " + dur;
-
   var hNow = heightAt(EXT, now);
   el("height").innerHTML = fr(hNow, 1) + "<small>m</small>";
-
-  // coefficient de la marée en cours : celui de la pleine mer qui encadre le moment présent
   var pm = rising ? next : prev;
-  var c = pm.coef || "–";
-  el("coefVal").innerHTML = c;
+  el("coefVal").innerHTML = pm.coef || "–";
   el("coef").className = (pm.coef >= 95) ? "big" : "";
 }
 
@@ -210,42 +246,37 @@ function renderCurve(now) {
     var h = heightAt(EXT, new Date(t));
     if (h !== null) pts.push(X(t).toFixed(1) + "," + Y(h).toFixed(1));
   }
-  // sable (estran) sous la courbe
-  s += '<rect x="0" y="' + bottom + '" width="' + W + '" height="' + (Hh - bottom) + '" fill="#d9c9a3" opacity="0.10"/>';
-  // eau
-  s += '<polygon points="0,' + bottom + " " + pts.join(" ") + " " + W + "," + bottom + '" fill="#2e6f86" opacity="0.55"/>';
-  s += '<polyline points="' + pts.join(" ") + '" fill="none" stroke="#7cc4d6" stroke-width="3"/>';
+  s += '<rect x="0" y="' + bottom + '" width="' + W + '" height="' + (Hh - bottom) + '" fill="' + C("sand") + '" opacity="0.10"/>';
+  s += '<polygon points="0,' + bottom + " " + pts.join(" ") + " " + W + "," + bottom + '" fill="' + C("water") + '" opacity="0.55"/>';
+  s += '<polyline points="' + pts.join(" ") + '" fill="none" stroke="' + C("wave") + '" stroke-width="3"/>';
 
-  // repères horaires toutes les 3 h
   var first = new Date(t0); first.setMinutes(0, 0, 0);
   for (var g = first.getTime(); g <= t1; g += 3600000) {
     var gd = new Date(g);
     if (g < t0 || gd.getHours() % 3) continue;
     var gx = X(g);
-    s += '<line x1="' + gx + '" x2="' + gx + '" y1="' + top + '" y2="' + bottom + '" stroke="#ffffff" stroke-opacity="0.06"/>';
+    s += '<line x1="' + gx + '" x2="' + gx + '" y1="' + top + '" y2="' + bottom + '" stroke="' + C("grid") + '" stroke-opacity="' + C("gridOp") + '"/>';
     var lbl = gd.getHours() === 0 ? JOURS[gd.getDay()] : pad(gd.getHours()) + "h";
-    s += '<text x="' + gx + '" y="' + (bottom + 28) + '" fill="#7f9ba3" font-size="16" text-anchor="middle">' + lbl + "</text>";
+    s += '<text x="' + gx + '" y="' + (bottom + 28) + '" fill="' + C("faint") + '" font-size="16" text-anchor="middle">' + lbl + "</text>";
   }
 
-  // pleines et basses mers dans la fenêtre
   for (var i = 0; i < EXT.length; i++) {
     var e = EXT[i], t2 = e.date.getTime();
     if (t2 < t0 || t2 > t1) continue;
     var ex = X(t2), ey = Y(e.height), isPM = e.type === "PM";
     var anchor = ex < 60 ? "start" : (ex > W - 60 ? "end" : "middle");
-    s += '<circle cx="' + ex + '" cy="' + ey + '" r="5" fill="' + (isPM ? "#eef3f1" : "#d9c9a3") + '"/>';
+    s += '<circle cx="' + ex + '" cy="' + ey + '" r="5" fill="' + (isPM ? C("ink") : C("sand")) + '"/>';
     var ty = isPM ? ey - 16 : ey + 30;
-    s += '<text x="' + ex + '" y="' + ty + '" fill="#eef3f1" font-size="20" font-weight="600" text-anchor="' + anchor + '">' +
+    s += '<text x="' + ex + '" y="' + ty + '" fill="' + C("ink") + '" font-size="20" font-weight="600" text-anchor="' + anchor + '">' +
       (isPM ? "PM " : "BM ") + hhmm(e.date) + "</text>";
-    s += '<text x="' + ex + '" y="' + (ty + (isPM ? -22 : 20)) + '" fill="#9fb8be" font-size="15" text-anchor="' + anchor + '">' +
+    s += '<text x="' + ex + '" y="' + (ty + (isPM ? -22 : 20)) + '" fill="' + C("muted") + '" font-size="15" text-anchor="' + anchor + '">' +
       fr(e.height, 2) + " m" + (isPM && e.coef ? ", coef " + e.coef : "") + "</text>";
   }
 
-  // maintenant
   var nx = X(now.getTime()), ny = Y(heightAt(EXT, now));
-  s += '<line x1="' + nx + '" x2="' + nx + '" y1="' + (top - 30) + '" y2="' + bottom + '" stroke="#f2b544" stroke-width="2"/>';
-  s += '<circle cx="' + nx + '" cy="' + ny + '" r="9" fill="#f2b544" stroke="#0f2a36" stroke-width="3"/>';
-  s += '<text x="' + (nx + 10) + '" y="' + (top - 16) + '" fill="#f2b544" font-size="16" font-weight="600">' + hhmm(now) + "</text>";
+  s += '<line x1="' + nx + '" x2="' + nx + '" y1="' + (top - 30) + '" y2="' + bottom + '" stroke="' + C("gold") + '" stroke-width="2"/>';
+  s += '<circle cx="' + nx + '" cy="' + ny + '" r="9" fill="' + C("gold") + '" stroke="' + C("panel") + '" stroke-width="3"/>';
+  s += '<text x="' + (nx + 10) + '" y="' + (top - 16) + '" fill="' + C("gold") + '" font-size="16" font-weight="600">' + hhmm(now) + "</text>";
 
   svg.innerHTML = s;
 }
@@ -283,6 +314,7 @@ function renderDays(now) {
 }
 
 function render() {
+  applyTheme();
   if (!EXT.length) return;
   var now = new Date();
   renderTop(now); renderCurve(now); renderDays(now);
@@ -294,7 +326,7 @@ function load() {
   var xhr = new XMLHttpRequest();
   xhr.open("GET", DATA_URL);
   xhr.timeout = 15000;
-  function retry() { if (!EXT.length) setTimeout(load, 60000); } // réessaie dans 1 min tant qu'on n'a rien
+  function retry() { if (!EXT.length) setTimeout(load, 60000); }
   xhr.onload = function () {
     if (xhr.status === 200) {
       try { EXT = flatten(JSON.parse(xhr.responseText)); lastLoad = new Date(); render(); return; } catch (e) {}
@@ -303,10 +335,9 @@ function load() {
   };
   xhr.onerror = retry;
   xhr.ontimeout = retry;
-  xhr.send(); // en cas d'échec, on garde les dernières données affichées
+  xhr.send();
 }
 
-/* mise à l'échelle pour l'aperçu sur un autre écran que 1280×800 */
 function fit() {
   var s = Math.min(window.innerWidth / 1280, window.innerHeight / 800);
   var st = el("stage").style;
@@ -316,6 +347,7 @@ function fit() {
 }
 window.onresize = fit; fit();
 
+applyTheme();
 load();
 setInterval(render, 60000);
 setInterval(load, REFRESH_DATA_MIN * 60000);

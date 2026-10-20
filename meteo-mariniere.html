@@ -6,13 +6,21 @@
 <title>Météo marine, La Plaine-sur-Mer</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-  /* WebView Android 6 : flexbox, pas de variables CSS, pas de grid. */
-  html, body { margin: 0; height: 100%; background: #e9eef4; overflow: hidden; }
-  body { font-family: "Barlow", "Roboto", "Helvetica Neue", Arial, sans-serif; color: #14254a; }
-  #stage { position: absolute; left: 0; top: 0; width: 1280px; height: 800px; background: #f7f9fb;
+  /* Thème clair/sombre via variables CSS. */
+  :root {
+    --bg:#f2f6fb; --panel:#ffffff; --ink:#14254a; --muted:#55657f; --faint:#6b7a92;
+    --faint2:#8b97aa; --line:#d5dce6; --blue:#2c5aa0; --gold:#e08a1e;
+  }
+  :root[data-theme="dark"] {
+    --bg:#0c2430; --panel:#0f2a36; --ink:#eef3f1; --muted:#9fb8be; --faint:#7f9ba3;
+    --faint2:#5f7f89; --line:#23495a; --blue:#7cc4d6; --gold:#f2b544;
+  }
+  html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; }
+  body { font-family: "Barlow", "Roboto", "Helvetica Neue", Arial, sans-serif; color: var(--ink); }
+  #stage { position: absolute; left: 0; top: 0; width: 1280px; height: 800px; background: var(--panel);
            -webkit-transform-origin: 0 0; transform-origin: 0 0; }
   .cond { font-family: "Barlow Condensed", "Roboto Condensed", "Arial Narrow", sans-serif; }
-  .muted { color: #55657f; }
+  .muted { color: var(--muted); }
 
   #main { display: -webkit-flex; display: flex; padding: 40px 56px 0; height: 560px; box-sizing: border-box; }
 
@@ -22,32 +30,32 @@
   #windTxt { margin-left: 34px; white-space: nowrap; }
   #place { font-size: 22px; font-weight: 500; margin: 0 0 14px; }
   #speed { font-size: 120px; font-weight: 600; line-height: 0.9; }
-  #speed small { font-size: 36px; font-weight: 500; color: #55657f; margin-left: 6px; }
+  #speed small { font-size: 36px; font-weight: 500; color: var(--muted); margin-left: 6px; }
   #gust { font-size: 23px; margin-top: 10px; }
   #from { font-size: 29px; font-weight: 600; margin-top: 18px; }
-  #beaufort { font-size: 22px; color: #14254a; margin-top: 6px; }
+  #beaufort { font-size: 22px; color: var(--ink); margin-top: 6px; }
 
   /* Colonne droite */
-  #side { -webkit-flex: 1; flex: 1; padding-left: 40px; padding-top: 30px; border-left: 1px solid #d5dce6; }
+  #side { -webkit-flex: 1; flex: 1; padding-left: 40px; padding-top: 30px; border-left: 1px solid var(--line); }
   .block { margin-bottom: 46px; }
-  .bTitle { font-size: 20px; color: #55657f; font-weight: 500; margin-bottom: 8px; }
+  .bTitle { font-size: 20px; color: var(--muted); font-weight: 500; margin-bottom: 8px; }
   #rainMsg { font-size: 32px; font-weight: 600; line-height: 1.15; margin-bottom: 12px; }
-  #rainMsg.dry { color: #2c5aa0; }
-  #rainMsg.wet { color: #e08a1e; }
+  #rainMsg.dry { color: var(--blue); }
+  #rainMsg.wet { color: var(--gold); }
   .sea { display: -webkit-flex; display: flex; }
   .seaItem { -webkit-flex: 1; flex: 1; }
   .seaVal { font-size: 52px; font-weight: 600; line-height: 1; }
-  .seaVal small { font-size: 22px; color: #55657f; font-weight: 500; margin-left: 3px; }
-  .seaLbl { font-size: 17px; color: #55657f; margin-top: 6px; }
+  .seaVal small { font-size: 22px; color: var(--muted); font-weight: 500; margin-left: 3px; }
+  .seaLbl { font-size: 17px; color: var(--muted); margin-top: 6px; }
 
   /* Bandeau des prochaines heures */
-  #hours { display: -webkit-flex; display: flex; margin: 0 56px; height: 190px; border-top: 1px solid #d5dce6; }
+  #hours { display: -webkit-flex; display: flex; margin: 0 56px; height: 190px; border-top: 1px solid var(--line); }
   .h { -webkit-flex: 1; flex: 1; text-align: center; padding-top: 16px; }
-  .hT { font-size: 18px; color: #55657f; }
+  .hT { font-size: 18px; color: var(--muted); }
   .hV { font-size: 36px; font-weight: 600; margin-top: 2px; }
-  .hG { font-size: 16px; color: #6b7a92; }
+  .hG { font-size: 16px; color: var(--faint); }
 
-  #foot { position: absolute; left: 56px; right: 56px; bottom: 14px; font-size: 13px; color: #8b97aa; }
+  #foot { position: absolute; left: 56px; right: 56px; bottom: 14px; font-size: 13px; color: var(--faint2); }
   #foot span { float: right; }
 </style>
 </head>
@@ -101,6 +109,46 @@ var MARINE_URL = "https://marine-api.open-meteo.com/v1/marine?latitude=" + SEA_L
   "&current=wave_height,wave_direction,wave_period,sea_surface_temperature&timezone=Europe%2FParis";
 var REFRESH_MIN = 10;
 
+/* ---------- thème jour/nuit auto (lever/coucher du soleil) ---------- */
+function sunTimes(date, lat, lon) {
+  var rad = Math.PI / 180, deg = 180 / Math.PI;
+  var start = new Date(date.getFullYear(), 0, 0);
+  var N = Math.floor((date - start) / 86400000);
+  function calc(isRise) {
+    var lngHour = lon / 15, t = N + ((isRise ? 6 : 18) - lngHour) / 24;
+    var M = (0.9856 * t) - 3.289;
+    var L = M + (1.916 * Math.sin(rad * M)) + (0.020 * Math.sin(rad * 2 * M)) + 282.634;
+    L = (L % 360 + 360) % 360;
+    var RA = deg * Math.atan(0.91764 * Math.tan(rad * L));
+    RA = (RA % 360 + 360) % 360;
+    RA = (RA + (Math.floor(L / 90) * 90 - Math.floor(RA / 90) * 90)) / 15;
+    var sinDec = 0.39782 * Math.sin(rad * L), cosDec = Math.cos(Math.asin(sinDec));
+    var cosH = (Math.cos(rad * 90.833) - (sinDec * Math.sin(rad * lat))) / (cosDec * Math.cos(rad * lat));
+    if (cosH > 1 || cosH < -1) return null;
+    var H = (isRise ? 360 - deg * Math.acos(cosH) : deg * Math.acos(cosH)) / 15;
+    var UT = ((H + RA - (0.06571 * t) - 6.622) % 24 + 24) % 24;
+    var d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0));
+    d.setUTCMinutes(Math.round(UT * 60));
+    return d;
+  }
+  return { rise: calc(true), set: calc(false) };
+}
+function currentTheme() {
+  var ov = (location.search.match(/theme=(light|dark)/) || [])[1];
+  if (ov) return ov;
+  var now = new Date(), s = sunTimes(now, LAT, LON);
+  if (!s.rise || !s.set) { var h = now.getHours(); return (h >= 8 && h < 20) ? "light" : "dark"; }
+  return (now >= s.rise && now < s.set) ? "light" : "dark";
+}
+var PAL = {
+  light: { ring:"#d5dce6", tick:"#b7c2d2", lbl:"#55657f", center:"#f7f9fb", rainoff:"#d5dce6",
+           rainon:"#2c5aa0", raintext:"#6b7a92", calm:"#55657f", w2:"#2c5aa0", w3:"#e08a1e", w4:"#d6403a" },
+  dark:  { ring:"#23495a", tick:"#2e4e5e", lbl:"#9fb8be", center:"#0f2a36", rainoff:"#23495a",
+           rainon:"#7cc4d6", raintext:"#7f9ba3", calm:"#9fb8be", w2:"#7cc4d6", w3:"#f2b544", w4:"#e86a5a" }
+};
+function C(k) { return PAL[currentTheme()][k]; }
+function applyTheme() { document.documentElement.setAttribute("data-theme", currentTheme()); }
+
 /* ---------- utilitaires ---------- */
 function pad(n) { return n < 10 ? "0" + n : "" + n; }
 function hhmm(d) { return pad(d.getHours()) + ":" + pad(d.getMinutes()); }
@@ -118,7 +166,7 @@ var BFT = [1, 4, 7, 11, 17, 22, 28, 34, 41, 48, 56, 64];
 var BFT_NAMES = ["calme", "très légère brise", "légère brise", "petite brise", "jolie brise", "bonne brise",
   "vent frais", "grand frais", "coup de vent", "fort coup de vent", "tempête", "violente tempête", "ouragan"];
 function beaufort(kn) { for (var i = 0; i < BFT.length; i++) if (kn < BFT[i]) return i; return 12; }
-function windColor(kn) { return kn < 11 ? "#55657f" : (kn < 22 ? "#2c5aa0" : (kn < 34 ? "#e08a1e" : "#d6403a")); }
+function windColor(kn) { return kn < 11 ? C("calm") : (kn < 22 ? C("w2") : (kn < 34 ? C("w3") : C("w4"))); }
 
 /* ---------- données simulées (même structure qu'Open-Meteo) ---------- */
 function mock() {
@@ -149,24 +197,24 @@ var D = null, lastLoad = null;
 
 function renderRose(dir, kn) {
   var s = "", i;
-  s += '<circle r="132" fill="none" stroke="#d5dce6" stroke-width="2"/>';
+  s += '<circle r="132" fill="none" stroke="' + C("ring") + '" stroke-width="2"/>';
   for (i = 0; i < 72; i++) {
     var a = i * 5 * Math.PI / 180, r1 = i % 18 === 0 ? 116 : (i % 9 === 0 ? 122 : 127);
     s += '<line x1="' + (Math.sin(a) * r1).toFixed(1) + '" y1="' + (-Math.cos(a) * r1).toFixed(1) +
       '" x2="' + (Math.sin(a) * 132).toFixed(1) + '" y2="' + (-Math.cos(a) * 132).toFixed(1) +
-      '" stroke="#b7c2d2" stroke-width="' + (i % 9 === 0 ? 2 : 1) + '"/>';
+      '" stroke="' + C("tick") + '" stroke-width="' + (i % 9 === 0 ? 2 : 1) + '"/>';
   }
   for (i = 0; i < 8; i += 2) {
     var b = i * 45 * Math.PI / 180;
     s += '<text x="' + (Math.sin(b) * 96).toFixed(1) + '" y="' + (-Math.cos(b) * 96 + 8).toFixed(1) +
-      '" fill="#55657f" font-size="24" font-weight="600" text-anchor="middle">' + ABBR[i] + "</text>";
+      '" fill="' + C("lbl") + '" font-size="24" font-weight="600" text-anchor="middle">' + ABBR[i] + "</text>";
   }
   // flèche : la queue est du côté d'où vient le vent, la pointe montre où il va
   var c = windColor(kn);
   s += '<g transform="rotate(' + dir + ')">' +
     '<line x1="0" y1="-118" x2="0" y2="64" stroke="' + c + '" stroke-width="7" stroke-linecap="round"/>' +
     '<polygon points="0,104 -22,58 22,58" fill="' + c + '"/>' +
-    '<circle cx="0" cy="-118" r="10" fill="#f7f9fb" stroke="' + c + '" stroke-width="5"/></g>';
+    '<circle cx="0" cy="-118" r="10" fill="' + C("center") + '" stroke="' + c + '" stroke-width="5"/></g>';
   el("rose").innerHTML = s;
 }
 
@@ -194,8 +242,8 @@ function renderRain(now) {
   for (i = 0; i < bars.length; i++) {
     var hgt = bars[i].p < 0.05 ? 4 : 8 + Math.min(bars[i].p, 2) / 2 * 52, x = i * (bw + gap);
     s += '<rect x="' + x + '" y="' + (64 - hgt) + '" width="' + bw + '" height="' + hgt + '" rx="3" fill="' +
-      (bars[i].p < 0.05 ? "#d5dce6" : "#2c5aa0") + '"/>';
-    if (i % 2 === 0) s += '<text x="' + x + '" y="90" fill="#6b7a92" font-size="16">' + hhmm(bars[i].t) + "</text>";
+      (bars[i].p < 0.05 ? C("rainoff") : C("rainon")) + '"/>';
+    if (i % 2 === 0) s += '<text x="' + x + '" y="90" fill="' + C("raintext") + '" font-size="16">' + hhmm(bars[i].t) + "</text>";
   }
   el("rain").innerHTML = s;
 }
@@ -218,6 +266,7 @@ function renderHours(now) {
 }
 
 function render() {
+  applyTheme();
   if (!D) return;
   var now = new Date(), c = D.forecast.current, kmh = Math.round(c.wind_speed_10m), dir = c.wind_direction_10m;
   var knv = c.wind_speed_10m / 1.852;
@@ -259,6 +308,7 @@ function fit() {
   st.top = ((window.innerHeight - 800 * s) / 2) + "px";
 }
 window.onresize = fit; fit();
+applyTheme();
 
 function tick() { render(); setTimeout(tick, 60000 - (Date.now() % 60000) + 50); }
 load(); setTimeout(tick, 60000 - (Date.now() % 60000) + 50);
