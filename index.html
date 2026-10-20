@@ -71,8 +71,6 @@
   <iframe class="slide" id="s0" src="slide-marees.html"></iframe>
   <iframe class="slide" id="s1" src="meteo-mariniere.html"></iframe>
   <iframe class="slide" id="s2" src="slide-retour.html"></iframe>
-  <iframe class="slide" id="s3" src="slide-peche.html"></iframe>
-  <iframe class="slide" id="s4" src="slide-marches.html"></iframe>
 
   <div id="nav">
     <div class="navBtn" data-i="0" title="Marées">
@@ -84,12 +82,6 @@
     <div class="navBtn" data-i="2" title="Retour">
       <svg viewBox="0 0 24 24"><path class="ic" d="M3 15v-2.6l2.2-4.1a1.6 1.6 0 0 1 1.4-.8h6.3a1.6 1.6 0 0 1 1.2.6L17.9 11H20a1 1 0 0 1 1 1v3"/><path class="ic" d="M3 15h2.2M9.4 15h5.2M18.8 15H21M8 11h6.2"/><circle class="ic" cx="7.3" cy="15.2" r="1.8"/><circle class="ic" cx="16.7" cy="15.2" r="1.8"/></svg>
     </div>
-    <div class="navBtn" data-i="3" title="Pêche à pied">
-      <svg viewBox="0 0 24 24"><path class="ic" d="M3.5 12c2.6-3.8 8.4-3.8 11 0-2.6 3.8-8.4 3.8-11 0z"/><path class="ic" d="M14.5 12l4.5-3.2v6.4z"/><circle class="ic" cx="6.4" cy="11.1" r="0.5"/></svg>
-    </div>
-    <div class="navBtn" data-i="4" title="Marchés">
-      <svg viewBox="0 0 24 24"><path class="ic" d="M4.5 8.5h15l-1.4 10.2a1 1 0 0 1-1 .8H6.9a1 1 0 0 1-1-.8z"/><path class="ic" d="M8 8.5a4 4 0 0 1 8 0"/><path class="ic" d="M9.3 12v4m5.4-4v4"/></svg>
-    </div>
   </div>
   <div id="prog"><div id="progFill"></div></div>
   <div id="pauseBadge">&#9208; En pause — appuyez pour reprendre</div>
@@ -97,7 +89,7 @@
 <script>
 /* ---------- réglages ---------- */
 var ROTATE_MS = 30000;   /* 30 s par slide */
-var N = 5;
+var N = 3;
 
 /* ---------- thème clair/sombre auto (lever/coucher du soleil) ----------
    La barre bascule en même temps que les slides (chaque iframe calcule
@@ -135,7 +127,7 @@ setInterval(applyTheme, 10 * 60000);
 
 var cur = -1, timer = null, idleTimer = null, start = 0, paused = false;
 var PAUSE_MS = 60000;   /* reprise auto après 60 s sans toucher */
-var slides = [document.getElementById("s0"), document.getElementById("s1"), document.getElementById("s2"), document.getElementById("s3"), document.getElementById("s4")];
+var slides = [document.getElementById("s0"), document.getElementById("s1"), document.getElementById("s2")];
 var btns = document.getElementsByClassName("navBtn");
 var progFill = document.getElementById("progFill");
 var pauseBadge = document.getElementById("pauseBadge");
@@ -155,7 +147,7 @@ function show(i) {
    (retour) n'entre dans la rotation que le dimanche. Elle reste
    atteignable en cliquant son icône n'importe quel jour. */
 function rotationList() {
-  return (new Date().getDay() === 0) ? [0, 1, 2, 3, 4] : [0, 1, 3, 4];
+  return (new Date().getDay() === 0) ? [0, 1, 2] : [0, 1];
 }
 function next() {
   var list = rotationList();
