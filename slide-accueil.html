@@ -66,17 +66,13 @@
   .thVal span { font-size: 24px; color: var(--muted); }
 
   #tides { -webkit-flex: 1; flex: 1; display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; }
-  #tidesBody { -webkit-flex: 1; flex: 1; display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; -webkit-justify-content: center; justify-content: center; }
-  .tide { display: -webkit-flex; display: flex; -webkit-align-items: baseline; align-items: baseline; padding: 14px 0; border-bottom: 1px solid var(--line); }
-  .tide:last-child { border-bottom: 0; }
-  .tideArrow { font-size: 40px; -webkit-flex: none; flex: none; margin-right: 20px; line-height: 1; }
-  .tideArrow.up { color: var(--accent); }
-  .tideArrow.down { color: var(--gold); }
-  .tideWhat { -webkit-flex: 1; flex: 1; }
-  .tideWhat .big { font-size: 30px; font-weight: 600; }
-  .tideWhat .sub { font-size: 19px; color: var(--muted); margin-top: 2px; }
-  .tideTime { font-size: 46px; font-weight: 700; white-space: nowrap; }
-  .tideTime .coef { font-size: 20px; color: var(--muted); font-weight: 600; display: block; text-align: right; }
+  #tideTrend { font-size: 23px; margin-top: 12px; }
+  #tideTrend .arr { font-weight: 700; margin-right: 8px; font-size: 26px; }
+  #tideTrend .arr.up { color: var(--accent); }
+  #tideTrend .arr.down { color: var(--gold); }
+  #tideTrend b { color: var(--ink); font-weight: 700; }
+  #tideCurve { -webkit-flex: 1; flex: 1; margin-top: 8px; min-height: 0; }
+  #tideCurve svg { width: 100%; height: 100%; display: block; }
 </style>
 </head>
 <body>
@@ -101,8 +97,9 @@
         <div id="thRow"></div>
       </div>
       <div class="tile" id="tides">
-        <div class="tLbl">Les marées</div>
-        <div id="tidesBody"></div>
+        <div class="tLbl">Les marées · aujourd'hui</div>
+        <div id="tideTrend"></div>
+        <div id="tideCurve"></div>
       </div>
     </div>
   </div>
@@ -235,23 +232,79 @@ function renderThermos() {
   el("thRow").innerHTML = h;
 }
 
+/* couleurs marée (selon thème) */
+function TC(k) {
+  var P = {
+    light: { water:"#8fb9c9", wave:"#2c5aa0", sand:"#b0894a", gold:"#e08a1e", grid:"#9fb0c4", gridOp:0.35, faint:"#6b7a92", ink:"#14254a", muted:"#55657f", panel:"#f7f9fb" },
+    dark:  { water:"#2e5a6e", wave:"#7cc4d6", sand:"#9c7b45", gold:"#f2b544", grid:"#3a5566", gridOp:0.5, faint:"#7f9ba3", ink:"#eef3f1", muted:"#9fb8be", panel:"#0f2a36" }
+  };
+  return P[currentTheme()][k];
+}
+function heightAt(ext, t) {
+  for (var i = 0; i < ext.length - 1; i++) {
+    var a = ext[i], b = ext[i + 1];
+    if (t >= a.date && t <= b.date) {
+      var f = (t - a.date) / (b.date - a.date);
+      return a.height + (b.height - a.height) * (1 - Math.cos(Math.PI * f)) / 2;
+    }
+  }
+  return null;
+}
+function frn(n, dec) { return n.toFixed(dec).replace(".", ","); }
+
 function renderTides() {
-  if (!TIDES) { el("tidesBody").innerHTML = '<div class="tide"><div class="tideWhat"><div class="sub">Chargement…</div></div></div>'; return; }
-  var now = new Date(), nextPM = null, nextBM = null;
-  for (var i = 0; i < TIDES.length; i++) {
-    if (TIDES[i].date < now) continue;
-    if (!nextPM && TIDES[i].type === "PM") nextPM = TIDES[i];
-    if (!nextBM && TIDES[i].type === "BM") nextBM = TIDES[i];
+  if (!TIDES || !TIDES.length) { el("tideCurve").innerHTML = ""; el("tideTrend").innerHTML = '<span style="color:var(--muted)">Chargement…</span>'; return; }
+  var now = new Date();
+  /* tendance + hauteur actuelle */
+  var next = null, prev = null;
+  for (var i = 0; i < TIDES.length; i++) { if (TIDES[i].date > now) { next = TIDES[i]; prev = TIDES[i - 1]; break; } }
+  var hNow = heightAt(TIDES, now);
+  if (next) {
+    var rising = next.type === "PM";
+    var mins = Math.round((next.date - now) / 60000);
+    var dur = mins >= 60 ? Math.floor(mins / 60) + " h " + pad(mins % 60) : mins + " min";
+    el("tideTrend").innerHTML = '<span class="arr ' + (rising ? "up" : "down") + '">' + (rising ? "&#8599;" : "&#8600;") + '</span>' +
+      (rising ? "Montante" : "Descendante") + (hNow != null ? " · <b>" + frn(hNow, 1) + " m</b>" : "") +
+      " · " + (rising ? "PM" : "BM") + " <b>" + hhmm(next.date) + "</b> dans " + dur;
   }
-  function row(e, up) {
-    if (!e) return "";
-    var arr = up ? '<div class="tideArrow up">&#8599;</div>' : '<div class="tideArrow down">&#8600;</div>';
-    var sub = (e.height != null ? e.height.toFixed(2).replace(".", ",") + " m" : "");
-    var coef = (up && e.coef) ? '<span class="coef">coef ' + e.coef + '</span>' : "";
-    return '<div class="tide">' + arr + '<div class="tideWhat"><div class="big">' + (up ? "Marée haute" : "Marée basse") + '</div><div class="sub">' + sub + '</div></div>' +
-           '<div class="tideTime">' + hhmm(e.date) + coef + '</div></div>';
+  /* courbe du jour */
+  var W = 640, H = 300, top = 26, bottom = 250;
+  var t0 = now.getTime() - 4 * 3600000, t1 = now.getTime() + 14 * 3600000;
+  var lo = 0, hi = 6.2;
+  function X(t) { return (t - t0) / (t1 - t0) * W; }
+  function Y(h) { return bottom - (h - lo) / (hi - lo) * (bottom - top); }
+  var pts = [], s = "";
+  for (var t = t0; t <= t1; t += 10 * 60000) { var h = heightAt(TIDES, new Date(t)); if (h !== null) pts.push(X(t).toFixed(1) + "," + Y(h).toFixed(1)); }
+  s += '<rect x="0" y="' + bottom + '" width="' + W + '" height="' + (H - bottom) + '" fill="' + TC("sand") + '" opacity="0.12"/>';
+  if (pts.length) {
+    s += '<polygon points="0,' + bottom + " " + pts.join(" ") + " " + W + "," + bottom + '" fill="' + TC("water") + '" opacity="0.55"/>';
+    s += '<polyline points="' + pts.join(" ") + '" fill="none" stroke="' + TC("wave") + '" stroke-width="3"/>';
   }
-  el("tidesBody").innerHTML = row(nextPM, true) + row(nextBM, false);
+  /* repères horaires toutes les 3 h */
+  var first = new Date(t0); first.setMinutes(0, 0, 0);
+  for (var g = first.getTime(); g <= t1; g += 3600000) {
+    var gd = new Date(g); if (g < t0 || gd.getHours() % 3) continue;
+    var gx = X(g);
+    s += '<line x1="' + gx + '" x2="' + gx + '" y1="' + top + '" y2="' + bottom + '" stroke="' + TC("grid") + '" stroke-opacity="' + TC("gridOp") + '"/>';
+    s += '<text x="' + gx + '" y="' + (bottom + 26) + '" fill="' + TC("faint") + '" font-size="16" text-anchor="middle">' + pad(gd.getHours()) + 'h</text>';
+  }
+  /* points PM / BM */
+  for (i = 0; i < TIDES.length; i++) {
+    var e = TIDES[i], te = e.date.getTime(); if (te < t0 || te > t1) continue;
+    var ex = X(te), ey = Y(e.height), isPM = e.type === "PM";
+    var anchor = ex < 70 ? "start" : (ex > W - 70 ? "end" : "middle");
+    s += '<circle cx="' + ex + '" cy="' + ey + '" r="5" fill="' + (isPM ? TC("ink") : TC("sand")) + '"/>';
+    var ty = isPM ? ey - 14 : ey + 28;
+    s += '<text x="' + ex + '" y="' + ty + '" fill="' + TC("ink") + '" font-size="19" font-weight="600" text-anchor="' + anchor + '">' + (isPM ? "PM " : "BM ") + hhmm(e.date) + '</text>';
+    s += '<text x="' + ex + '" y="' + (ty + (isPM ? -20 : 19)) + '" fill="' + TC("muted") + '" font-size="14" text-anchor="' + anchor + '">' + frn(e.height, 2) + " m" + (isPM && e.coef ? ", coef " + e.coef : "") + '</text>';
+  }
+  /* repère maintenant */
+  if (hNow != null) {
+    var nx = X(now.getTime()), ny = Y(hNow);
+    s += '<line x1="' + nx + '" x2="' + nx + '" y1="' + (top - 20) + '" y2="' + bottom + '" stroke="' + TC("gold") + '" stroke-width="2"/>';
+    s += '<circle cx="' + nx + '" cy="' + ny + '" r="9" fill="' + TC("gold") + '" stroke="' + TC("panel") + '" stroke-width="3"/>';
+  }
+  el("tideCurve").innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">' + s + '</svg>';
 }
 
 function render() { applyTheme(); renderWeather(); renderThermos(); renderTides(); }
