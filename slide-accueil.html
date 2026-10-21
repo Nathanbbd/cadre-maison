@@ -46,6 +46,9 @@
               display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; }
   #rainHint svg { width: 24px; height: 24px; margin-right: 12px; -webkit-flex: none; flex: none; }
   #rainHint svg path { fill: none; stroke: var(--gold); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  #wChips { margin-top: 14px; display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; }
+  .wchip { background: rgba(127,138,153,0.14); border-radius: 13px; padding: 7px 14px; font-size: 18px; margin: 0 8px 8px 0; color: var(--muted); }
+  .wchip b { color: var(--ink); font-weight: 600; }
   #wHours { margin-top: auto; padding-top: 18px; border-top: 1px solid var(--line); }
   #wHoursLbl { font-size: 15px; letter-spacing: 1px; color: var(--faint); text-transform: uppercase; margin-bottom: 8px; }
   #hoursRow { display: -webkit-flex; display: flex; }
@@ -89,6 +92,7 @@
         <div id="wCond"></div>
         <div id="wHL"></div>
         <div id="rainHint"></div>
+        <div id="wChips"></div>
         <div id="wHours"><div id="wHoursLbl">Prochaines heures</div><div id="hoursRow"></div></div>
       </div>
     </div>
@@ -204,6 +208,8 @@ var WX = null, TH = null, TIDES = null, lastLoad = null;
 function mockThermos() { return [{ name: "Pièce de vie", t: 20 }, { name: "Dortoir", t: 18 }, { name: "Cellier", t: 14 }]; }
 
 /* ---------- rendu météo ---------- */
+function dirFr(deg) { if (deg == null) return ""; var d = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"]; return d[Math.round(((deg % 360) / 45)) % 8]; }
+
 function renderWeather() {
   var now = new Date();
   el("hello").innerHTML = greeting(now.getHours());
@@ -216,6 +222,11 @@ function renderWeather() {
   var umb = '<svg viewBox="0 0 24 24"><path d="M12 4V2.4"/><path d="M4 11a8 8 0 0 1 16 0z"/><path d="M12 11v7a2.2 2.2 0 0 0 4.3 0.6"/></svg>';
   el("rainHint").innerHTML = umb + WX.hint;
   el("rainHint").style.display = WX.hint ? "flex" : "none";
+  var ch = "";
+  if (WX.feels != null) ch += '<span class="wchip">Ressenti <b>' + Math.round(WX.feels) + '°</b></span>';
+  if (WX.wind != null) ch += '<span class="wchip">Vent <b>' + Math.round(WX.wind) + ' km/h ' + dirFr(WX.wdir) + '</b></span>';
+  if (WX.hum != null) ch += '<span class="wchip">Humidité <b>' + Math.round(WX.hum) + ' %</b></span>';
+  el("wChips").innerHTML = ch;
   var h = "";
   for (var i = 0; i < WX.cols.length; i++) {
     var col = WX.cols[i], ic = (col.night && col.code <= 2) ? moonIcon(col.code, 38) : wIcon(col.code, 38);
@@ -340,13 +351,13 @@ function rainHint(j) {
 }
 function loadWeather() {
   var url = "https://api.open-meteo.com/v1/forecast?latitude=" + LAT + "&longitude=" + LON +
-    "&current=temperature_2m,weather_code&hourly=temperature_2m,weather_code,precipitation_probability,precipitation" +
+    "&current=temperature_2m,apparent_temperature,weather_code,relative_humidity_2m,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,weather_code,precipitation_probability,precipitation" +
     "&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=Europe%2FParis&forecast_days=1";
   var x = new XMLHttpRequest(); x.open("GET", url); x.timeout = 12000;
   x.onload = function () {
     if (x.status === 200) { try {
       var j = JSON.parse(x.responseText), c = j.current, d = j.daily;
-      WX = { temp: c.temperature_2m, code: c.weather_code, tmax: d.temperature_2m_max[0], tmin: d.temperature_2m_min[0], cols: buildCols(j), hint: rainHint(j) };
+      WX = { temp: c.temperature_2m, code: c.weather_code, feels: c.apparent_temperature, hum: c.relative_humidity_2m, wind: c.wind_speed_10m, wdir: c.wind_direction_10m, tmax: d.temperature_2m_max[0], tmin: d.temperature_2m_min[0], cols: buildCols(j), hint: rainHint(j) };
       lastLoad = new Date(); render();
     } catch (e) {} }
   };
