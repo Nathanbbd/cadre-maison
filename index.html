@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cadre maison — La Plaine-sur-Mer</title>
 <style>
-  /* Shell du diaporama. Compatible WebView Android 6 / Chrome 106.
-     Thème clair/sombre de la barre via variables CSS. Sombre par défaut. */
   :root {
     --shellbg:#000; --navbg:rgba(10,22,30,0.72); --navsep:rgba(255,255,255,0.14);
     --navic:#cdd9de; --navactive:#2e6f86; --prog:#7cc4d6;
@@ -18,8 +16,6 @@
   html, body { margin: 0; height: 100%; background: var(--shellbg); overflow: hidden; }
   body { font-family: "Roboto", "Helvetica Neue", Arial, sans-serif; }
 
-  /* Slides : plein écran, superposées, fondu. La barre est par-dessus (overlay),
-     donc les slides ne sont PAS rétrécies. */
   .slide {
     position: absolute; left: 0; top: 0; width: 100%; height: 100%;
     border: 0; opacity: 0; -webkit-transition: opacity 0.6s ease; transition: opacity 0.6s ease;
@@ -27,19 +23,14 @@
   }
   .slide.on { opacity: 1; pointer-events: auto; }
 
-  /* Barre de navigation en HAUT (superposée, fine, translucide) */
   #nav {
     position: absolute; bottom: 0; left: 0; right: 0; height: 40px;
     background: var(--navbg);
-    display: -webkit-flex; display: flex;
-    -webkit-flex-direction: row; flex-direction: row;
-    z-index: 10;
+    display: -webkit-flex; display: flex; -webkit-flex-direction: row; flex-direction: row; z-index: 10;
   }
-  /* 3 rectangles égaux, chacun un tiers de la largeur, icône centrée */
   .navBtn {
     -webkit-flex: 1; flex: 1; height: 100%;
-    display: -webkit-flex; display: flex;
-    -webkit-align-items: center; align-items: center;
+    display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center;
     -webkit-justify-content: center; justify-content: center;
     cursor: pointer; border-right: 1px solid var(--navsep);
     -webkit-transition: background 0.25s ease; transition: background 0.25s ease;
@@ -50,12 +41,10 @@
   .navBtn.active { background: var(--navactive); }
   .navBtn.active .ic { stroke: #ffffff; }
 
-  /* Liseré de progression : fine ligne sous la barre, se remplit sur 30 s */
   #prog { position: absolute; bottom: 40px; left: 0; right: 0; height: 2px; z-index: 11; }
   #progFill { height: 100%; width: 0; background: var(--prog); }
   body.paused #progFill { opacity: 0.3; }
 
-  /* Badge "en pause" */
   #pauseBadge {
     position: absolute; left: 50%; bottom: 52px; -webkit-transform: translateX(-50%); transform: translateX(-50%);
     background: var(--navactive); color: #fff; font-size: 14px; font-weight: 600;
@@ -64,7 +53,6 @@
   }
   body.paused #pauseBadge { display: block; }
 
-  /* Écran noir : veille (nuit) ou mode absent */
   #blackout { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: #000; z-index: 50;
     display: none; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center; text-align: center; }
   #blackout.on { display: -webkit-flex; display: flex; }
@@ -75,51 +63,37 @@
 </style>
 </head>
 <body>
-
-  <!-- Ordre : accueil, marées, météo, voiture (retour) -->
-  <iframe class="slide" id="s0" src="slide-accueil.html"></iframe>
-  <iframe class="slide" id="s1" src="slide-marees.html"></iframe>
-  <iframe class="slide" id="s2" src="meteo-mariniere.html"></iframe>
-  <iframe class="slide" id="s3" src="slide-meteo-detail.html"></iframe>
-  <iframe class="slide" id="s4" src="slide-retour.html"></iframe>
-
-  <div id="nav">
-    <div class="navBtn" data-i="0" title="Accueil">
-      <svg viewBox="0 0 24 24"><path class="ic" d="M4 11.5 12 4l8 7.5"/><path class="ic" d="M6 10.5V20h12v-9.5"/><path class="ic" d="M10 20v-5h4v5"/></svg>
-    </div>
-    <div class="navBtn" data-i="1" title="Marées">
-      <svg viewBox="0 0 24 24"><path class="ic" d="M2 15c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2M2 20c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2"/></svg>
-    </div>
-    <div class="navBtn" data-i="2" title="Météo marine">
-      <svg viewBox="0 0 24 24"><circle class="ic" cx="9" cy="8.5" r="3"/><path class="ic" d="M9 3.6v1.5M4.1 8.5h1.5M5.3 4.8l1.1 1.1M12.7 4.8l-1.1 1.1"/><path class="ic" d="M7.5 19h9.3a3.1 3.1 0 0 0 .1-6.2 4 4 0 0 0-7.6-1A3.3 3.3 0 0 0 7.5 19z"/></svg>
-    </div>
-    <div class="navBtn" data-i="3" title="Météo détaillée">
-      <svg viewBox="0 0 24 24"><path class="ic" d="M7 15h9.3a3.1 3.1 0 0 0 .1-6.2 4 4 0 0 0-7.6-1A3.3 3.3 0 0 0 7 15z"/><path class="ic" d="M8.5 18l-1 2.5M12 18l-1 2.5M15.5 18l-1 2.5"/></svg>
-    </div>
-    <div class="navBtn" data-i="4" title="Retour">
-      <svg viewBox="0 0 24 24"><path class="ic" d="M3 15v-2.6l2.2-4.1a1.6 1.6 0 0 1 1.4-.8h6.3a1.6 1.6 0 0 1 1.2.6L17.9 11H20a1 1 0 0 1 1 1v3"/><path class="ic" d="M3 15h2.2M9.4 15h5.2M18.8 15H21M8 11h6.2"/><circle class="ic" cx="7.3" cy="15.2" r="1.8"/><circle class="ic" cx="16.7" cy="15.2" r="1.8"/></svg>
-    </div>
-  </div>
+  <div id="slides"></div>
+  <div id="nav"></div>
   <div id="prog"><div id="progFill"></div></div>
   <div id="pauseBadge">&#9208; En pause — appuyez pour reprendre</div>
   <div id="blackout"><div id="blackMsg"></div></div>
 
 <script>
-/* ---------- réglages ---------- */
-var ROTATE_MS = 30000;   /* 30 s par slide */
-var N = 5;
+/* ======================= Catalogue des pages ======================= */
+var CATALOG = {
+  "accueil":      { src: "slide-accueil.html",      title: "Accueil",         icon: '<svg viewBox="0 0 24 24"><path class="ic" d="M4 11.5 12 4l8 7.5"/><path class="ic" d="M6 10.5V20h12v-9.5"/><path class="ic" d="M10 20v-5h4v5"/></svg>' },
+  "marees":       { src: "slide-marees.html",       title: "Marées",          icon: '<svg viewBox="0 0 24 24"><path class="ic" d="M2 15c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2M2 20c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2"/></svg>' },
+  "meteo-marine": { src: "meteo-mariniere.html",    title: "Météo marine",    icon: '<svg viewBox="0 0 24 24"><circle class="ic" cx="9" cy="8.5" r="3"/><path class="ic" d="M9 3.6v1.5M4.1 8.5h1.5M5.3 4.8l1.1 1.1M12.7 4.8l-1.1 1.1"/><path class="ic" d="M7.5 19h9.3a3.1 3.1 0 0 0 .1-6.2 4 4 0 0 0-7.6-1A3.3 3.3 0 0 0 7.5 19z"/></svg>' },
+  "meteo":        { src: "slide-meteo-detail.html", title: "Météo détaillée", icon: '<svg viewBox="0 0 24 24"><path class="ic" d="M7 15h9.3a3.1 3.1 0 0 0 .1-6.2 4 4 0 0 0-7.6-1A3.3 3.3 0 0 0 7 15z"/><path class="ic" d="M8.5 18l-1 2.5M12 18l-1 2.5M15.5 18l-1 2.5"/></svg>' },
+  "retour":       { src: "slide-retour.html",       title: "Retour",          icon: '<svg viewBox="0 0 24 24"><path class="ic" d="M3 15v-2.6l2.2-4.1a1.6 1.6 0 0 1 1.4-.8h6.3a1.6 1.6 0 0 1 1.2.6L17.9 11H20a1 1 0 0 1 1 1v3"/><path class="ic" d="M3 15h2.2M9.4 15h5.2M18.8 15H21M8 11h6.2"/><circle class="ic" cx="7.3" cy="15.2" r="1.8"/><circle class="ic" cx="16.7" cy="15.2" r="1.8"/></svg>' }
+};
+/* Config par défaut (repli si le Worker est injoignable) */
+var DEFAULT_PAGES = [
+  { id: "accueil", mode: "rotation", sec: 30 },
+  { id: "marees", mode: "rotation", sec: 30 },
+  { id: "meteo-marine", mode: "rotation", sec: 30 },
+  { id: "meteo", mode: "rotation", sec: 30 },
+  { id: "retour", mode: "dimanche", sec: 30 }
+];
 
-/* ---------- thème clair/sombre auto (lever/coucher du soleil) ----------
-   La barre bascule en même temps que les slides (chaque iframe calcule
-   le thème de son côté, de façon identique). */
+/* ======================= Thème jour/nuit ======================= */
 var LAT = 47.1375, LON = -2.1876;
 function sunTimes(date, lat, lon) {
-  var rad = Math.PI / 180, deg = 180 / Math.PI;
-  var start = new Date(date.getFullYear(), 0, 0);
+  var rad = Math.PI / 180, deg = 180 / Math.PI, start = new Date(date.getFullYear(), 0, 0);
   var Nd = Math.floor((date - start) / 86400000);
   function calc(isRise) {
-    var lngHour = lon / 15, t = Nd + ((isRise ? 6 : 18) - lngHour) / 24;
-    var M = (0.9856 * t) - 3.289;
+    var lngHour = lon / 15, t = Nd + ((isRise ? 6 : 18) - lngHour) / 24, M = (0.9856 * t) - 3.289;
     var L = M + (1.916 * Math.sin(rad * M)) + (0.020 * Math.sin(rad * 2 * M)) + 282.634; L = (L % 360 + 360) % 360;
     var RA = deg * Math.atan(0.91764 * Math.tan(rad * L)); RA = (RA % 360 + 360) % 360;
     RA = (RA + (Math.floor(L / 90) * 90 - Math.floor(RA / 90) * 90)) / 15;
@@ -140,45 +114,70 @@ function currentTheme() {
   return (now >= s.rise && now < s.set) ? "light" : "dark";
 }
 function applyTheme() { document.documentElement.setAttribute("data-theme", currentTheme()); }
-applyTheme();
-setInterval(applyTheme, 10 * 60000);
+applyTheme(); setInterval(applyTheme, 10 * 60000);
 
-var cur = -1, timer = null, idleTimer = null, start = 0, paused = false;
-var PAUSE_MS = 60000;   /* reprise auto après 60 s sans toucher */
-var slides = [document.getElementById("s0"), document.getElementById("s1"), document.getElementById("s2"), document.getElementById("s3"), document.getElementById("s4")];
-var btns = document.getElementsByClassName("navBtn");
-var progFill = document.getElementById("progFill");
-var pauseBadge = document.getElementById("pauseBadge");
+/* ======================= Diaporama (piloté par la config) ======================= */
+var PAGES = DEFAULT_PAGES.slice();
+var slides = [], btns = [], N = 0, cur = -1, timer = null, idleTimer = null, start = 0, curDur = 30000, paused = false;
+var PAUSE_MS = 60000;
+var slidesBox = document.getElementById("slides"), navBox = document.getElementById("nav");
+var progFill = document.getElementById("progFill"), pauseBadge = document.getElementById("pauseBadge");
+
+function sig(pages) { var o = ""; for (var i = 0; i < pages.length; i++) o += pages[i].id + ":" + pages[i].mode + ":" + pages[i].sec + "|"; return o; }
+
+function buildUI(pages) {
+  /* ne garde que les pages connues du catalogue */
+  var valid = [];
+  for (var i = 0; i < pages.length; i++) if (CATALOG[pages[i].id]) valid.push(pages[i]);
+  if (!valid.length) valid = DEFAULT_PAGES.slice();
+  var prevId = (cur >= 0 && PAGES[cur]) ? PAGES[cur].id : null;
+  PAGES = valid; N = valid.length;
+
+  var sh = "", nh = "";
+  for (i = 0; i < N; i++) {
+    var c = CATALOG[valid[i].id];
+    sh += '<iframe class="slide" id="s' + i + '" src="' + c.src + '"></iframe>';
+    nh += '<div class="navBtn" data-i="' + i + '" title="' + c.title + '">' + c.icon + '</div>';
+  }
+  slidesBox.innerHTML = sh; navBox.innerHTML = nh;
+  slides = []; for (i = 0; i < N; i++) slides.push(document.getElementById("s" + i));
+  btns = navBox.getElementsByClassName("navBtn");
+
+  for (i = 0; i < N; i++) {
+    (function (idx) { btns[idx].onclick = function () { show(idx); pauseRotation(); }; })(i);
+    (function (fr) { fr.onload = function () { attachTouch(fr); }; attachTouch(fr); })(slides[i]);
+  }
+  /* reprend sur la même page si possible, sinon la 1re de la rotation */
+  var startIdx = 0;
+  if (prevId) { for (i = 0; i < N; i++) if (PAGES[i].id === prevId) { startIdx = i; break; } }
+  else { var rl = rotationList(); startIdx = rl.length ? rl[0] : 0; }
+  cur = -1; show(startIdx);
+}
+
+function inRotation(p) { return p.mode === "rotation" || (p.mode === "dimanche" && new Date().getDay() === 0); }
+function rotationList() { var l = []; for (var i = 0; i < PAGES.length; i++) if (inRotation(PAGES[i])) l.push(i); return l; }
 
 function show(i) {
+  if (i < 0 || i >= N) return;
   cur = i;
   for (var k = 0; k < N; k++) {
     if (k === i) { slides[k].className = "slide on"; btns[k].className = "navBtn active"; }
     else { slides[k].className = "slide"; btns[k].className = "navBtn"; }
   }
+  curDur = Math.max(3, PAGES[i].sec) * 1000;
   start = Date.now();
   if (timer) clearTimeout(timer);
-  if (!paused) timer = setTimeout(next, ROTATE_MS);
+  if (!paused) timer = setTimeout(next, curDur);
 }
-
-/* Rotation auto : marées + météo + pêche tous les jours ; la voiture
-   (retour) n'entre dans la rotation que le dimanche. Elle reste
-   atteignable en cliquant son icône n'importe quel jour. */
-function rotationList() {
-  return (new Date().getDay() === 0) ? [0, 1, 2, 3, 4] : [0, 1, 2, 3];
-}
-
-/* Navigation par nom, appelable depuis une slide (même origine) :
-   window.parent.goSlideName('meteo' | 'marees' | ...) */
-window.goSlideName = function (name) {
-  var map = { accueil: 0, marees: 1, "meteo-marine": 2, meteo: 3, retour: 4 };
-  if (map[name] != null) { show(map[name]); pauseRotation(); }
-};
 function next() {
-  var list = rotationList();
+  var list = rotationList(); if (!list.length) { if (timer) clearTimeout(timer); return; }
   var idx = list.indexOf(cur);
   show(idx === -1 ? list[0] : list[(idx + 1) % list.length]);
 }
+
+window.goSlideName = function (name) {
+  for (var i = 0; i < PAGES.length; i++) if (PAGES[i].id === name) { show(i); pauseRotation(); return; }
+};
 
 /* ---------- pause au toucher / reprise auto ---------- */
 function pauseRotation() {
@@ -189,44 +188,25 @@ function pauseRotation() {
 function resumeRotation() {
   paused = false; document.body.className = "";
   if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
-  show(cur);   /* relance le minuteur + la barre de progression */
+  show(inRotation(PAGES[cur]) ? cur : (rotationList()[0] || 0));
 }
-
 function loop() {
-  if (!paused) { var f = Math.min(1, (Date.now() - start) / ROTATE_MS); progFill.style.width = (f * 100) + "%"; }
+  if (!paused) progFill.style.width = (Math.min(1, (Date.now() - start) / curDur) * 100) + "%";
   window.requestAnimationFrame ? requestAnimationFrame(loop) : setTimeout(loop, 100);
 }
-
-/* Barre : choisir une slide met aussi en pause (pour la lire tranquillement) */
-for (var k = 0; k < N; k++) {
-  (function (idx) { btns[idx].onclick = function () { show(idx); pauseRotation(); }; })(k);
-}
-
-/* Badge : reprendre immédiatement */
-pauseBadge.onclick = function () { resumeRotation(); };
-
-/* Toucher le CONTENU d'une slide (dans l'iframe) met en pause. Même origine → OK. */
 function attachTouch(fr) {
-  try {
-    var d = fr.contentDocument || (fr.contentWindow && fr.contentWindow.document);
-    if (!d) return;
-    d.addEventListener("touchstart", pauseRotation, true);
-    d.addEventListener("mousedown", pauseRotation, true);
-  } catch (e) {}
+  try { var d = fr.contentDocument || (fr.contentWindow && fr.contentWindow.document); if (!d) return;
+    d.addEventListener("touchstart", pauseRotation, true); d.addEventListener("mousedown", pauseRotation, true); } catch (e) {}
 }
-for (var m = 0; m < N; m++) {
-  (function (fr) { fr.onload = function () { attachTouch(fr); }; attachTouch(fr); })(slides[m]);
-}
-/* Toucher la barre ou le reste du shell met aussi en pause */
+pauseBadge.onclick = function () { resumeRotation(); };
 document.addEventListener("touchstart", pauseRotation, true);
 
-show(0);
+buildUI(PAGES);
 loop();
 
-/* ---------- Veille (nuit) & Mode absent, pilotés par le Worker admin ----------
-   Colle l'URL de ton Worker "cadre-admin" ci-dessous pour activer la fonction. */
+/* ======================= Veille / Absent / Config (Worker admin) ======================= */
 var ADMIN_URL = "https://cadre-adminlpl.boisbourdinnathande.workers.dev";
-var ST = null, wakeUntil = 0;
+var ST = null, wakeUntil = 0, curSig = sig(PAGES);
 function hhmmNow() { var d = new Date(); function p(n) { return n < 10 ? "0" + n : "" + n; } return p(d.getHours()) + ":" + p(d.getMinutes()); }
 function applyBlackout() {
   var bo = document.getElementById("blackout"), msg = document.getElementById("blackMsg");
@@ -240,7 +220,14 @@ function applyBlackout() {
 function pollState() {
   if (!ADMIN_URL) return;
   var xhr = new XMLHttpRequest(); xhr.open("GET", ADMIN_URL + "?t=" + Date.now()); xhr.timeout = 10000;
-  xhr.onload = function () { if (xhr.status === 200) { try { ST = JSON.parse(xhr.responseText); applyBlackout(); } catch (e) {} } };
+  xhr.onload = function () {
+    if (xhr.status !== 200) return;
+    try {
+      ST = JSON.parse(xhr.responseText);
+      if (ST.pages && ST.pages.length) { var ns = sig(ST.pages); if (ns !== curSig) { curSig = ns; buildUI(ST.pages); } }
+      applyBlackout();
+    } catch (e) {}
+  };
   xhr.send();
 }
 document.getElementById("blackout").addEventListener("click", function () {
@@ -249,13 +236,13 @@ document.getElementById("blackout").addEventListener("click", function () {
     if (ADMIN_URL) { var xhr = new XMLHttpRequest(); xhr.open("GET", ADMIN_URL + "?action=clearAbsent&t=" + Date.now()); xhr.onload = function () { try { ST = JSON.parse(xhr.responseText); } catch (e) {} applyBlackout(); }; xhr.send(); }
     ST.absent = false; applyBlackout();
   } else {
-    wakeUntil = Date.now() + 60000; applyBlackout(); setTimeout(applyBlackout, 60500);
+    var wake = (ST.veille && ST.veille.wake ? ST.veille.wake : 120) * 1000;
+    wakeUntil = Date.now() + wake; applyBlackout(); setTimeout(applyBlackout, wake + 500);
   }
 });
 if (ADMIN_URL) { pollState(); setInterval(pollState, 60000); setInterval(applyBlackout, 5000); }
 
-/* Filet de sécurité : recharge tout le dashboard une fois par heure,
-   au cas où une requête de données aurait échoué (ex. réseau au réveil). */
+/* Filet de sécurité : recharge tout le dashboard une fois par heure. */
 setInterval(function () { try { location.reload(); } catch (e) {} }, 60 * 60 * 1000);
 </script>
 </body>
