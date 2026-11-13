@@ -285,19 +285,31 @@ function render() {
   el("sst").innerHTML = Math.round(m.sea_surface_temperature) + "<small>°C</small>";
 
   renderRain(now); renderHours(now);
-  el("src").innerHTML = USE_LIVE ? "Mis à jour à " + hhmm(lastLoad) : "Données simulées (démo)";
+  el("src").innerHTML = OFFLINE_T ? "⚠ Hors ligne · maj " + hhmm(new Date(OFFLINE_T)) : (USE_LIVE ? "Mis à jour à " + hhmm(lastLoad) : "Données simulées (démo)");
 }
 
-function getJSON(url, cb) {
-  var x = new XMLHttpRequest(); x.open("GET", url);
-  x.onload = function () { if (x.status === 200) { try { cb(JSON.parse(x.responseText)); } catch (e) {} } };
-  x.send();
+var OFFLINE_T = 0;
+function cput(k, s) { try { localStorage.setItem("cad_" + k, '{"t":' + Date.now() + ',"s":' + JSON.stringify(s) + '}'); } catch (e) {} }
+function cget(k) { try { var r = localStorage.getItem("cad_" + k); return r ? JSON.parse(r) : null; } catch (e) { return null; } }
+function getJSON(key, url, cb) {
+  var x = new XMLHttpRequest();
+  try { x.open("GET", url); } catch (e) {}
+  x.timeout = 12000;
+  function fb() { var c = cget(key); if (c) { try { cb(JSON.parse(c.s), true, c.t); } catch (e) {} } }
+  x.onload = function () { if (x.status === 200) { try { var d = JSON.parse(x.responseText); cput(key, x.responseText); cb(d, false, Date.now()); return; } catch (e) {} } fb(); };
+  x.onerror = fb; x.ontimeout = fb;
+  try { x.send(); } catch (e) { fb(); }
 }
 
 function load() {
   if (!USE_LIVE) { D = mock(); lastLoad = new Date(); render(); return; }
-  getJSON(FORECAST_URL, function (f) {
-    getJSON(MARINE_URL, function (m) { D = { forecast: f, marine: m }; lastLoad = new Date(); render(); });
+  getJSON("mm_forecast", FORECAST_URL, function (f, fs, ft) {
+    getJSON("mm_marine", MARINE_URL, function (m, ms, mt) {
+      D = { forecast: f, marine: m };
+      var a = fs ? ft : 0, b = ms ? mt : 0;
+      OFFLINE_T = (a || b) ? Math.max(a, b) : 0;
+      lastLoad = new Date(); render();
+    });
   });
 }
 

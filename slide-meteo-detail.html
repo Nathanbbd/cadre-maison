@@ -66,10 +66,13 @@
           background: -webkit-linear-gradient(left, var(--cold), var(--warm)); background: linear-gradient(90deg, var(--cold), var(--warm)); }
   .dDot { position: absolute; top: -3px; width: 16px; height: 16px; border-radius: 8px; background: var(--ink); border: 3px solid var(--panel); -webkit-transform: translateX(-8px); transform: translateX(-8px); }
   .dMax { width: 48px; font-size: 21px; font-weight: 600; -webkit-flex: none; flex: none; }
+  #offline { display: none; position: absolute; top: 18px; right: 22px; z-index: 6; background: rgba(240,170,60,0.18);
+             color: #e0901e; border: 1px solid rgba(224,144,30,0.55); border-radius: 12px; padding: 6px 13px; font-size: 16px; font-weight: 600; }
 </style>
 </head>
 <body>
 <div id="stage">
+  <div id="offline"></div>
   <div id="row1">
     <div class="tile" id="cur">
       <div class="lbl">La Plaine-sur-Mer</div>
@@ -274,6 +277,21 @@ function renderDays() {
 }
 
 /* ---------- chargement ---------- */
+var OFFLINE_T = 0;
+function cput(k, s) { try { localStorage.setItem("cad_" + k, '{"t":' + Date.now() + ',"s":' + JSON.stringify(s) + '}'); } catch (e) {} }
+function cget(k) { try { var r = localStorage.getItem("cad_" + k); return r ? JSON.parse(r) : null; } catch (e) { return null; } }
+function setOffline() { var b = el("offline"); if (!b) return; if (OFFLINE_T) { b.textContent = "⚠ Hors ligne · maj " + hhmm(new Date(OFFLINE_T)); b.style.display = "block"; } else b.style.display = "none"; }
+function applyData(j, stale, t) {
+  var c = j.current, dl = j.daily;
+  var minute = [];
+  if (j.minutely_15 && j.minutely_15.time) { for (var k = 0; k < j.minutely_15.time.length; k++) minute.push({ t: new Date(j.minutely_15.time[k]).getTime(), p: j.minutely_15.precipitation[k] || 0 }); }
+  DATA = {
+    cur: { temp: c.temperature_2m, feels: c.apparent_temperature, hum: c.relative_humidity_2m, code: c.weather_code, isDay: c.is_day, wind: c.wind_speed_10m, wdir: c.wind_direction_10m },
+    hourly: j.hourly, minute: minute,
+    daily: { time: dl.time, code: dl.weather_code, tmax: dl.temperature_2m_max, tmin: dl.temperature_2m_min, probmax: dl.precipitation_probability_max, sunrise: dl.sunrise, sunset: dl.sunset }
+  };
+  OFFLINE_T = stale ? t : 0; render(); setOffline();
+}
 function load() {
   var url = "https://api.open-meteo.com/v1/forecast?latitude=" + LAT + "&longitude=" + LON +
     "&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,is_day,wind_speed_10m,wind_direction_10m" +
@@ -281,21 +299,13 @@ function load() {
     "&hourly=temperature_2m,weather_code,precipitation_probability" +
     "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset" +
     "&timezone=Europe%2FParis&forecast_days=6";
-  var x = new XMLHttpRequest(); x.open("GET", url); x.timeout = 12000;
-  x.onload = function () {
-    if (x.status === 200) { try {
-      var j = JSON.parse(x.responseText), c = j.current, dl = j.daily;
-      var minute = [];
-      if (j.minutely_15 && j.minutely_15.time) { for (var k = 0; k < j.minutely_15.time.length; k++) minute.push({ t: new Date(j.minutely_15.time[k]).getTime(), p: j.minutely_15.precipitation[k] || 0 }); }
-      DATA = {
-        cur: { temp: c.temperature_2m, feels: c.apparent_temperature, hum: c.relative_humidity_2m, code: c.weather_code, isDay: c.is_day, wind: c.wind_speed_10m, wdir: c.wind_direction_10m },
-        hourly: j.hourly, minute: minute,
-        daily: { time: dl.time, code: dl.weather_code, tmax: dl.temperature_2m_max, tmin: dl.temperature_2m_min, probmax: dl.precipitation_probability_max, sunrise: dl.sunrise, sunset: dl.sunset }
-      };
-      render();
-    } catch (e) {} }
-  };
-  x.send();
+  var x = new XMLHttpRequest();
+  try { x.open("GET", url); } catch (e) {}
+  x.timeout = 12000;
+  function fb() { var cc = cget("det_wx"); if (cc) { try { applyData(JSON.parse(cc.s), true, cc.t); } catch (e) {} } }
+  x.onload = function () { if (x.status === 200) { try { var j = JSON.parse(x.responseText); cput("det_wx", x.responseText); applyData(j, false, Date.now()); return; } catch (e) {} } fb(); };
+  x.onerror = fb; x.ontimeout = fb;
+  try { x.send(); } catch (e) { fb(); }
 }
 
 function fit() {

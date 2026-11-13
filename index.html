@@ -2,250 +2,226 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cadre maison — La Plaine-sur-Mer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Cadre">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#2c5aa0">
+<title>Cadre — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --shellbg:#000; --navbg:rgba(10,22,30,0.72); --navsep:rgba(255,255,255,0.14);
-    --navic:#cdd9de; --navactive:#2e6f86; --prog:#7cc4d6;
-  }
-  :root[data-theme="light"] {
-    --shellbg:#f2f6fb; --navbg:rgba(255,255,255,0.88); --navsep:rgba(20,37,74,0.10);
-    --navic:#55657f; --navactive:#2c5aa0; --prog:#2c5aa0;
-  }
-  html, body { margin: 0; height: 100%; background: var(--shellbg); overflow: hidden; }
-  body { font-family: "Roboto", "Helvetica Neue", Arial, sans-serif; }
+  :root { --bg:#eef2f7; --card:#ffffff; --ink:#14254a; --muted:#64748b; --line:#e3e8f0;
+          --accent:#2c5aa0; --ok:#2e8b57; --warn:#e08a1e; --danger:#c0392b; --field:#f3f6fa; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Barlow", system-ui, Arial, sans-serif; }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 20px 16px 70px; }
+  h1 { font-size: 28px; margin: 6px 0 2px; }
+  .sub { color: var(--muted); font-size: 15px; margin-bottom: 18px; }
 
-  .slide {
-    position: absolute; left: 0; top: 0; width: 100%; height: 100%;
-    border: 0; opacity: 0; -webkit-transition: opacity 0.6s ease; transition: opacity 0.6s ease;
-    pointer-events: none;
-  }
-  .slide.on { opacity: 1; pointer-events: auto; }
+  .status { background: var(--card); border-radius: 18px; padding: 18px 20px; box-shadow: 0 2px 12px rgba(20,37,74,0.06); margin-bottom: 16px; }
+  .statusBig { font-size: 30px; font-weight: 700; display: flex; align-items: center; }
+  .dot { width: 14px; height: 14px; border-radius: 7px; margin-right: 12px; background: var(--ok); }
+  .dot.veille { background: var(--accent); } .dot.absent { background: var(--danger); }
+  .statusSub { color: var(--muted); font-size: 15px; margin-top: 6px; }
 
-  #nav {
-    position: absolute; bottom: 0; left: 0; right: 0; height: 40px;
-    background: var(--navbg);
-    display: -webkit-flex; display: flex; -webkit-flex-direction: row; flex-direction: row; z-index: 10;
-  }
-  .navBtn {
-    -webkit-flex: 1; flex: 1; height: 100%;
-    display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center;
-    -webkit-justify-content: center; justify-content: center;
-    cursor: pointer; border-right: 1px solid var(--navsep);
-    -webkit-transition: background 0.25s ease; transition: background 0.25s ease;
-  }
-  .navBtn:last-child { border-right: 0; }
-  .navBtn svg { width: 22px; height: 22px; display: block; }
-  .navBtn .ic { fill: none; stroke: var(--navic); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-  .navBtn.active { background: var(--navactive); }
-  .navBtn.active .ic { stroke: #ffffff; }
+  .card { background: var(--card); border-radius: 18px; padding: 18px 20px; box-shadow: 0 2px 12px rgba(20,37,74,0.06); margin-bottom: 16px; }
+  .card h2 { font-size: 19px; margin: 0 0 4px; }
+  .card p { color: var(--muted); font-size: 14px; margin: 0 0 14px; }
+  .rowb { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
 
-  #prog { position: absolute; bottom: 40px; left: 0; right: 0; height: 2px; z-index: 11; }
-  #progFill { height: 100%; width: 0; background: var(--prog); }
-  body.paused #progFill { opacity: 0.3; }
+  .switch { position: relative; width: 58px; height: 34px; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; inset: 0; background: var(--line); border-radius: 34px; transition: .2s; }
+  .slider:before { content: ""; position: absolute; height: 26px; width: 26px; left: 4px; top: 4px; background: #fff; border-radius: 50%; transition: .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+  input:checked + .slider { background: var(--danger); }
+  input:checked + .slider:before { transform: translateX(24px); }
+  input.blue:checked + .slider { background: var(--accent); }
 
-  #pauseBadge {
-    position: absolute; left: 50%; bottom: 52px; -webkit-transform: translateX(-50%); transform: translateX(-50%);
-    background: var(--navactive); color: #fff; font-size: 14px; font-weight: 600;
-    padding: 8px 16px; border-radius: 18px; z-index: 12; display: none; cursor: pointer;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.25); white-space: nowrap;
+  label.chk { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 600; margin: 4px 0 14px; }
+  label.chk input { width: 22px; height: 22px; accent-color: var(--accent); }
+
+  .times { display: flex; gap: 14px; align-items: flex-end; }
+  .fld { font-size: 14px; color: var(--muted); }
+  input[type=time], input[type=number] { font-size: 19px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--field); color: var(--ink); margin-top: 4px; font-family: inherit; }
+  input[type=time] { width: 100%; }
+  input.sec { width: 72px; text-align: center; }
+  input[type=text], input[type=password] { width: 100%; font-size: 16px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--field); color: var(--ink); margin-top: 6px; font-family: inherit; }
+  textarea { width: 100%; font-size: 16px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--field); color: var(--ink); font-family: inherit; resize: vertical; line-height: 1.4; }
+  .wakeRow { display: flex; align-items: center; gap: 10px; margin-top: 16px; font-size: 16px; }
+
+  /* pages */
+  .pg { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-top: 1px solid var(--line); }
+  .pg:first-child { border-top: 0; }
+  .ord { display: flex; flex-direction: column; gap: 4px; flex: none; }
+  .ord button { width: 30px; height: 22px; border: 1px solid var(--line); background: var(--field); border-radius: 7px; font-size: 12px; color: var(--ink); line-height: 1; }
+  .ord button:disabled { opacity: .35; }
+  .pgName { flex: 1; min-width: 0; font-weight: 600; font-size: 16px; }
+  select { flex: none; max-width: 150px; font-size: 14px; padding: 8px 8px; border: 1px solid var(--line); border-radius: 11px; background: var(--field); color: var(--ink); font-family: inherit; }
+  input.sec { width: 56px; }
+
+  .btn { width: 100%; margin-top: 16px; padding: 14px; border: 0; border-radius: 14px; background: var(--accent); color: #fff; font-size: 17px; font-weight: 600; font-family: inherit; }
+  .btn:active { opacity: .85; }
+  .btn.ghost { background: transparent; color: var(--accent); border: 1px solid var(--line); }
+
+  details summary { color: var(--muted); font-size: 14px; cursor: pointer; margin-top: 8px; }
+  #toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 12px; font-size: 15px; opacity: 0; transition: .25s; pointer-events: none; z-index: 20; }
+  #toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0c2430; --card:#0f2a36; --ink:#eef3f1; --muted:#9fb8be; --line:#23495a; --field:#13303d; }
   }
-  body.paused #pauseBadge { display: block; }
-
-  #blackout { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: #000; z-index: 50;
-    display: none; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center; text-align: center; }
-  #blackout.on { display: -webkit-flex; display: flex; }
-  #blackMsg { font-family: "Roboto", Arial, sans-serif; padding: 0 48px; }
-  #blackTitle { font-size: 42px; font-weight: 600; color: #d6dee3; }
-  #blackSub { font-size: 22px; color: #7c8b96; margin-top: 16px; }
-  #blackClock { font-size: 72px; font-weight: 300; color: #243038; }
 </style>
 </head>
 <body>
-  <div id="slides"></div>
-  <div id="nav"></div>
-  <div id="prog"><div id="progFill"></div></div>
-  <div id="pauseBadge">&#9208; En pause — appuyez pour reprendre</div>
-  <div id="blackout"><div id="blackMsg"></div></div>
+<div class="wrap">
+  <h1>Cadre — La Plaine</h1>
+  <div class="sub">Contrôle de l'écran</div>
+
+  <div class="status">
+    <div class="statusBig"><span class="dot" id="dot"></span><span id="stateTxt">—</span></div>
+    <div class="statusSub" id="stateSub">Connexion…</div>
+  </div>
+
+  <div class="card">
+    <div class="rowb">
+      <div><h2>Mode absent</h2><p style="margin:0">Écran noir avec message. Toucher le cadre le désactive.</p></div>
+      <label class="switch"><input type="checkbox" id="absent"><span class="slider"></span></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Tableau de messages</h2>
+    <p>Un mot affiché sur l'écran d'accueil du cadre, pour la famille sur place. Laisse vide pour l'enlever.</p>
+    <textarea id="note" maxlength="280" rows="3" placeholder="Ex : Pensez à fermer le gaz en partant · Clés chez les voisins"></textarea>
+    <button class="btn" id="saveNote">Enregistrer le message</button>
+  </div>
+
+  <div class="card">
+    <h2>Veille de nuit</h2>
+    <p>L'écran devient noir sur cette plage. Un toucher le rallume quelques minutes, puis il se rendort.</p>
+    <label class="chk"><input type="checkbox" id="vEnabled">Activer la veille</label>
+    <div class="times">
+      <div style="flex:1"><div class="fld">Écran noir de</div><input type="time" id="vStart"></div>
+      <div style="flex:1"><div class="fld">à</div><input type="time" id="vEnd"></div>
+    </div>
+    <div class="wakeRow">Rallumé pendant <input type="number" class="sec" id="vWake" min="10" max="600" step="10"> secondes après un toucher</div>
+    <button class="btn" id="saveVeille">Enregistrer la veille</button>
+  </div>
+
+  <div class="card">
+    <h2>Pages et rotation</h2>
+    <p>Ordre des pages et durée de chacune. « Le dimanche » : dans la rotation seulement le dimanche. « Onglet seulement » : accessible en touchant la barre du bas, mais ne défile pas toute seule.</p>
+    <div id="pages"></div>
+    <button class="btn" id="savePages">Enregistrer les pages</button>
+  </div>
+
+  <details>
+    <summary>Réglages (adresse du Worker &amp; code)</summary>
+    <div class="card" style="margin-top:10px">
+      <label class="fld">Adresse du Worker
+        <input type="text" id="url" placeholder="https://cadre-admin...workers.dev" autocapitalize="off" autocomplete="off"></label>
+      <label class="fld" style="display:block;margin-top:12px">Code PIN
+        <input type="password" id="pin" placeholder="ton code" inputmode="numeric"></label>
+      <button class="btn ghost" id="saveCfg">Enregistrer les réglages</button>
+    </div>
+  </details>
+</div>
+<div id="toast"></div>
 
 <script>
-/* ======================= Catalogue des pages ======================= */
-var CATALOG = {
-  "accueil":      { src: "slide-accueil.html",      title: "Accueil",         icon: '<svg viewBox="0 0 24 24"><path class="ic" d="M4 11.5 12 4l8 7.5"/><path class="ic" d="M6 10.5V20h12v-9.5"/><path class="ic" d="M10 20v-5h4v5"/></svg>' },
-  "marees":       { src: "slide-marees.html",       title: "Marées",          icon: '<svg viewBox="0 0 24 24"><path class="ic" d="M2 15c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2M2 20c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2"/></svg>' },
-  "meteo-marine": { src: "meteo-mariniere.html",    title: "Météo marine",    icon: '<svg viewBox="0 0 24 24"><circle class="ic" cx="9" cy="8.5" r="3"/><path class="ic" d="M9 3.6v1.5M4.1 8.5h1.5M5.3 4.8l1.1 1.1M12.7 4.8l-1.1 1.1"/><path class="ic" d="M7.5 19h9.3a3.1 3.1 0 0 0 .1-6.2 4 4 0 0 0-7.6-1A3.3 3.3 0 0 0 7.5 19z"/></svg>' },
-  "meteo":        { src: "slide-meteo-detail.html", title: "Météo détaillée", icon: '<svg viewBox="0 0 24 24"><path class="ic" d="M7 15h9.3a3.1 3.1 0 0 0 .1-6.2 4 4 0 0 0-7.6-1A3.3 3.3 0 0 0 7 15z"/><path class="ic" d="M8.5 18l-1 2.5M12 18l-1 2.5M15.5 18l-1 2.5"/></svg>' },
-  "retour":       { src: "slide-retour.html",       title: "Retour",          icon: '<svg viewBox="0 0 24 24"><path class="ic" d="M3 15v-2.6l2.2-4.1a1.6 1.6 0 0 1 1.4-.8h6.3a1.6 1.6 0 0 1 1.2.6L17.9 11H20a1 1 0 0 1 1 1v3"/><path class="ic" d="M3 15h2.2M9.4 15h5.2M18.8 15H21M8 11h6.2"/><circle class="ic" cx="7.3" cy="15.2" r="1.8"/><circle class="ic" cx="16.7" cy="15.2" r="1.8"/></svg>' },
-  "bateau":       { src: "slide-bateau.html",        title: "Sortie bateau",   icon: '<svg viewBox="0 0 24 24"><path class="ic" d="M3 17h16l-2.2 3H5.2z"/><path class="ic" d="M12 4v10"/><path class="ic" d="M12 5l6 8h-6z"/></svg>' }
-};
-/* Config par défaut (repli si le Worker est injoignable) */
-var DEFAULT_PAGES = [
-  { id: "accueil", mode: "rotation", sec: 30 },
-  { id: "marees", mode: "rotation", sec: 30 },
-  { id: "meteo-marine", mode: "rotation", sec: 30 },
-  { id: "meteo", mode: "rotation", sec: 30 },
-  { id: "retour", mode: "dimanche", sec: 30 },
-  { id: "bateau", mode: "tab", sec: 30 }
-];
+  var $ = function (id) { return document.getElementById(id); };
+  var URLK = "cadreAdminUrl", PINK = "cadreAdminPin";
+  var NAMES = { accueil: "Accueil", marees: "Marées", "meteo-marine": "Météo marine", meteo: "Météo détaillée", retour: "Retour", bateau: "Sortie bateau" };
+  var MODES = [["rotation", "Dans la rotation"], ["dimanche", "Le dimanche"], ["tab", "Onglet seulement"]];
+  var PAGES = [], loadedOnce = false;
 
-/* ======================= Thème jour/nuit ======================= */
-var LAT = 47.1375, LON = -2.1876;
-function sunTimes(date, lat, lon) {
-  var rad = Math.PI / 180, deg = 180 / Math.PI, start = new Date(date.getFullYear(), 0, 0);
-  var Nd = Math.floor((date - start) / 86400000);
-  function calc(isRise) {
-    var lngHour = lon / 15, t = Nd + ((isRise ? 6 : 18) - lngHour) / 24, M = (0.9856 * t) - 3.289;
-    var L = M + (1.916 * Math.sin(rad * M)) + (0.020 * Math.sin(rad * 2 * M)) + 282.634; L = (L % 360 + 360) % 360;
-    var RA = deg * Math.atan(0.91764 * Math.tan(rad * L)); RA = (RA % 360 + 360) % 360;
-    RA = (RA + (Math.floor(L / 90) * 90 - Math.floor(RA / 90) * 90)) / 15;
-    var sinDec = 0.39782 * Math.sin(rad * L), cosDec = Math.cos(Math.asin(sinDec));
-    var cosH = (Math.cos(rad * 90.833) - (sinDec * Math.sin(rad * lat))) / (cosDec * Math.cos(rad * lat));
-    if (cosH > 1 || cosH < -1) return null;
-    var H = (isRise ? 360 - deg * Math.acos(cosH) : deg * Math.acos(cosH)) / 15;
-    var UT = ((H + RA - (0.06571 * t) - 6.622) % 24 + 24) % 24;
-    var d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0));
-    d.setUTCMinutes(Math.round(UT * 60)); return d;
+  function getUrl() { try { return localStorage.getItem(URLK) || ""; } catch (e) { return ""; } }
+  function getPin() { try { return localStorage.getItem(PINK) || ""; } catch (e) { return ""; } }
+  var toastT;
+  function toast(m) { var t = $("toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove("on"); }, 2200); }
+
+  function api(params) {
+    var base = getUrl(); if (!base) return Promise.reject(new Error("no-url"));
+    return fetch(base + (params ? ("?" + params) : ""), { cache: "no-store" }).then(function (r) { return r.json(); });
   }
-  return { rise: calc(true), set: calc(false) };
-}
-function currentTheme() {
-  var ov = (location.search.match(/theme=(light|dark)/) || [])[1]; if (ov) return ov;
-  var now = new Date(), s = sunTimes(now, LAT, LON);
-  if (!s.rise || !s.set) { var h = now.getHours(); return (h >= 8 && h < 20) ? "light" : "dark"; }
-  return (now >= s.rise && now < s.set) ? "light" : "dark";
-}
-function applyTheme() { document.documentElement.setAttribute("data-theme", currentTheme()); }
-applyTheme(); setInterval(applyTheme, 10 * 60000);
 
-/* ======================= Diaporama (piloté par la config) ======================= */
-var PAGES = DEFAULT_PAGES.slice();
-var slides = [], btns = [], N = 0, cur = -1, timer = null, idleTimer = null, start = 0, curDur = 30000, paused = false;
-var PAUSE_MS = 60000;
-var slidesBox = document.getElementById("slides"), navBox = document.getElementById("nav");
-var progFill = document.getElementById("progFill"), pauseBadge = document.getElementById("pauseBadge");
-
-function sig(pages) { var o = ""; for (var i = 0; i < pages.length; i++) o += pages[i].id + ":" + pages[i].mode + ":" + pages[i].sec + "|"; return o; }
-
-function buildUI(pages) {
-  /* ne garde que les pages connues du catalogue */
-  var valid = [];
-  for (var i = 0; i < pages.length; i++) if (CATALOG[pages[i].id]) valid.push(pages[i]);
-  if (!valid.length) valid = DEFAULT_PAGES.slice();
-  var prevId = (cur >= 0 && PAGES[cur]) ? PAGES[cur].id : null;
-  PAGES = valid; N = valid.length;
-
-  var sh = "", nh = "";
-  for (i = 0; i < N; i++) {
-    var c = CATALOG[valid[i].id];
-    sh += '<iframe class="slide" id="s' + i + '" src="' + c.src + '"></iframe>';
-    nh += '<div class="navBtn" data-i="' + i + '" title="' + c.title + '">' + c.icon + '</div>';
+  function renderPages() {
+    var h = "";
+    for (var i = 0; i < PAGES.length; i++) {
+      var p = PAGES[i], name = NAMES[p.id] || p.id;
+      var opts = "";
+      for (var m = 0; m < MODES.length; m++) opts += '<option value="' + MODES[m][0] + '"' + (p.mode === MODES[m][0] ? " selected" : "") + ">" + MODES[m][1] + "</option>";
+      h += '<div class="pg">' +
+        '<div class="ord"><button data-up="' + i + '"' + (i === 0 ? " disabled" : "") + '>&#9650;</button><button data-down="' + i + '"' + (i === PAGES.length - 1 ? " disabled" : "") + '>&#9660;</button></div>' +
+        '<div class="pgName">' + name + '</div>' +
+        '<select data-mode="' + i + '">' + opts + '</select>' +
+        '<input type="number" class="sec" data-sec="' + i + '" min="3" max="600" step="5" value="' + p.sec + '">' +
+        '</div>';
+    }
+    var box = $("pages"); box.innerHTML = h;
+    box.querySelectorAll("button[data-up]").forEach(function (b) { b.onclick = function () { var i = +b.getAttribute("data-up"); swap(i, i - 1); }; });
+    box.querySelectorAll("button[data-down]").forEach(function (b) { b.onclick = function () { var i = +b.getAttribute("data-down"); swap(i, i + 1); }; });
+    box.querySelectorAll("select[data-mode]").forEach(function (s) { s.onchange = function () { PAGES[+s.getAttribute("data-mode")].mode = s.value; }; });
+    box.querySelectorAll("input[data-sec]").forEach(function (inp) { inp.onchange = function () { PAGES[+inp.getAttribute("data-sec")].sec = Math.max(3, Math.min(600, parseInt(inp.value, 10) || 30)); }; });
   }
-  slidesBox.innerHTML = sh; navBox.innerHTML = nh;
-  slides = []; for (i = 0; i < N; i++) slides.push(document.getElementById("s" + i));
-  btns = navBox.getElementsByClassName("navBtn");
-
-  for (i = 0; i < N; i++) {
-    (function (idx) { btns[idx].onclick = function () { show(idx); pauseRotation(); }; })(i);
-    (function (fr) { fr.onload = function () { attachTouch(fr); }; attachTouch(fr); })(slides[i]);
+  function swap(i, j) { if (j < 0 || j >= PAGES.length) return; readInputs(); var t = PAGES[i]; PAGES[i] = PAGES[j]; PAGES[j] = t; renderPages(); }
+  function readInputs() {
+    $("pages").querySelectorAll("select[data-mode]").forEach(function (s) { PAGES[+s.getAttribute("data-mode")].mode = s.value; });
+    $("pages").querySelectorAll("input[data-sec]").forEach(function (inp) { PAGES[+inp.getAttribute("data-sec")].sec = Math.max(3, Math.min(600, parseInt(inp.value, 10) || 30)); });
   }
-  /* reprend sur la même page si possible, sinon la 1re de la rotation */
-  var startIdx = 0;
-  if (prevId) { for (i = 0; i < N; i++) if (PAGES[i].id === prevId) { startIdx = i; break; } }
-  else { var rl = rotationList(); startIdx = rl.length ? rl[0] : 0; }
-  cur = -1; show(startIdx);
-}
 
-function inRotation(p) { return p.mode === "rotation" || (p.mode === "dimanche" && new Date().getDay() === 0); }
-function rotationList() { var l = []; for (var i = 0; i < PAGES.length; i++) if (inRotation(PAGES[i])) l.push(i); return l; }
-
-function show(i) {
-  if (i < 0 || i >= N) return;
-  cur = i;
-  for (var k = 0; k < N; k++) {
-    if (k === i) { slides[k].className = "slide on"; btns[k].className = "navBtn active"; }
-    else { slides[k].className = "slide"; btns[k].className = "navBtn"; }
+  function paintState(s) {
+    if (s.error) { $("stateTxt").textContent = "Erreur"; $("stateSub").textContent = s.error; return; }
+    var dot = $("dot"); dot.className = "dot";
+    if (s.absent) { dot.classList.add("absent"); $("stateTxt").textContent = "Absent"; $("stateSub").textContent = "Écran noir avec message · " + s.now; }
+    else if (s.veilleActive) { dot.classList.add("veille"); $("stateTxt").textContent = "En veille"; $("stateSub").textContent = "Nuit · réveil à " + (s.veille ? s.veille.end : "—") + " · " + s.now; }
+    else { $("stateTxt").textContent = "Allumé"; $("stateSub").textContent = "Dashboard actif · " + s.now; }
+    $("absent").checked = !!s.absent;
+    if (!loadedOnce) {
+      if (s.veille) { $("vEnabled").checked = !!s.veille.enabled; $("vStart").value = s.veille.start || "23:00"; $("vEnd").value = s.veille.end || "07:00"; $("vWake").value = s.veille.wake || 120; }
+      if (Array.isArray(s.pages)) { PAGES = s.pages.map(function (p) { return { id: p.id, mode: p.mode, sec: p.sec }; }); renderPages(); }
+      $("note").value = s.note || "";
+      loadedOnce = true;
+    }
   }
-  curDur = Math.max(3, PAGES[i].sec) * 1000;
-  start = Date.now();
-  if (timer) clearTimeout(timer);
-  if (!paused) timer = setTimeout(next, curDur);
-}
-function next() {
-  var list = rotationList(); if (!list.length) { if (timer) clearTimeout(timer); return; }
-  var idx = list.indexOf(cur);
-  show(idx === -1 ? list[0] : list[(idx + 1) % list.length]);
-}
 
-window.goSlideName = function (name) {
-  for (var i = 0; i < PAGES.length; i++) if (PAGES[i].id === name) { show(i); pauseRotation(); return; }
-};
-
-/* ---------- pause au toucher / reprise auto ---------- */
-function pauseRotation() {
-  if (!paused) { paused = true; document.body.className = "paused"; if (timer) { clearTimeout(timer); timer = null; } }
-  if (idleTimer) clearTimeout(idleTimer);
-  idleTimer = setTimeout(resumeRotation, PAUSE_MS);
-}
-function resumeRotation() {
-  paused = false; document.body.className = "";
-  if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
-  show(inRotation(PAGES[cur]) ? cur : (rotationList()[0] || 0));
-}
-function loop() {
-  if (!paused) progFill.style.width = (Math.min(1, (Date.now() - start) / curDur) * 100) + "%";
-  window.requestAnimationFrame ? requestAnimationFrame(loop) : setTimeout(loop, 100);
-}
-function attachTouch(fr) {
-  try { var d = fr.contentDocument || (fr.contentWindow && fr.contentWindow.document); if (!d) return;
-    d.addEventListener("touchstart", pauseRotation, true); d.addEventListener("mousedown", pauseRotation, true); } catch (e) {}
-}
-pauseBadge.onclick = function () { resumeRotation(); };
-document.addEventListener("touchstart", pauseRotation, true);
-
-buildUI(PAGES);
-loop();
-
-/* ======================= Veille / Absent / Config (Worker admin) ======================= */
-var ADMIN_URL = "https://cadre-adminlpl.boisbourdinnathande.workers.dev";
-var ST = null, wakeUntil = 0, curSig = sig(PAGES);
-function hhmmNow() { var d = new Date(); function p(n) { return n < 10 ? "0" + n : "" + n; } return p(d.getHours()) + ":" + p(d.getMinutes()); }
-function applyBlackout() {
-  var bo = document.getElementById("blackout"), msg = document.getElementById("blackMsg");
-  var black = ST && ST.blackout && Date.now() > wakeUntil;
-  if (black) {
-    if (ST.absent) msg.innerHTML = '<div id="blackTitle">Nous sommes absents</div><div id="blackSub">Touchez l\'écran si vous êtes rentré</div>';
-    else msg.innerHTML = '<div id="blackClock">' + hhmmNow() + '</div>';
-    bo.className = "on";
-  } else { bo.className = ""; }
-}
-function pollState() {
-  if (!ADMIN_URL) return;
-  var xhr = new XMLHttpRequest(); xhr.open("GET", ADMIN_URL + "?t=" + Date.now()); xhr.timeout = 10000;
-  xhr.onload = function () {
-    if (xhr.status !== 200) return;
-    try {
-      ST = JSON.parse(xhr.responseText);
-      if (ST.pages && ST.pages.length) { var ns = sig(ST.pages); if (ns !== curSig) { curSig = ns; buildUI(ST.pages); } }
-      applyBlackout();
-    } catch (e) {}
-  };
-  xhr.send();
-}
-document.getElementById("blackout").addEventListener("click", function () {
-  if (!ST) return;
-  if (ST.absent) {
-    if (ADMIN_URL) { var xhr = new XMLHttpRequest(); xhr.open("GET", ADMIN_URL + "?action=clearAbsent&t=" + Date.now()); xhr.onload = function () { try { ST = JSON.parse(xhr.responseText); } catch (e) {} applyBlackout(); }; xhr.send(); }
-    ST.absent = false; applyBlackout();
-  } else {
-    var wake = (ST.veille && ST.veille.wake ? ST.veille.wake : 120) * 1000;
-    wakeUntil = Date.now() + wake; applyBlackout(); setTimeout(applyBlackout, wake + 500);
+  function refresh() {
+    if (!getUrl()) { $("stateTxt").textContent = "À configurer"; $("stateSub").textContent = "Ouvre Réglages et colle l'adresse du Worker + ton code."; return; }
+    api("").then(paintState).catch(function () { $("stateTxt").textContent = "Hors ligne"; $("stateSub").textContent = "Worker injoignable."; });
   }
-});
-if (ADMIN_URL) { pollState(); setInterval(pollState, 60000); setInterval(applyBlackout, 5000); }
 
-/* Filet de sécurité : recharge tout le dashboard une fois par heure. */
-setInterval(function () { try { location.reload(); } catch (e) {} }, 60 * 60 * 1000);
+  $("absent").addEventListener("change", function () {
+    api("action=set&pin=" + encodeURIComponent(getPin()) + "&absent=" + (this.checked ? "1" : "0"))
+      .then(function (s) { if (s.error) { toast(s.error); refresh(); } else { paintState(s); toast(s.absent ? "Mode absent activé" : "Mode absent désactivé"); } })
+      .catch(function () { toast("Échec"); });
+  });
+
+  $("saveVeille").addEventListener("click", function () {
+    var p = "action=set&pin=" + encodeURIComponent(getPin()) +
+      "&v_enabled=" + ($("vEnabled").checked ? "1" : "0") +
+      "&v_start=" + encodeURIComponent($("vStart").value || "23:00") +
+      "&v_end=" + encodeURIComponent($("vEnd").value || "07:00") +
+      "&v_wake=" + encodeURIComponent($("vWake").value || "120");
+    api(p).then(function (s) { if (s.error) toast(s.error); else toast("Veille enregistrée"); }).catch(function () { toast("Échec"); });
+  });
+
+  $("saveNote").addEventListener("click", function () {
+    var p = "action=set&pin=" + encodeURIComponent(getPin()) + "&note=" + encodeURIComponent($("note").value);
+    api(p).then(function (s) { if (s.error) toast(s.error); else toast($("note").value.trim() ? "Message enregistré" : "Message effacé"); }).catch(function () { toast("Échec"); });
+  });
+
+  $("savePages").addEventListener("click", function () {
+    readInputs();
+    var p = "action=set&pin=" + encodeURIComponent(getPin()) + "&pages=" + encodeURIComponent(JSON.stringify(PAGES));
+    api(p).then(function (s) { if (s.error) toast(s.error); else toast("Pages enregistrées"); }).catch(function () { toast("Échec"); });
+  });
+
+  $("saveCfg").addEventListener("click", function () {
+    try { localStorage.setItem(URLK, $("url").value.trim().replace(/\/$/, "")); localStorage.setItem(PINK, $("pin").value.trim()); } catch (e) {}
+    loadedOnce = false; toast("Réglages enregistrés"); refresh();
+  });
+
+  (function init() { $("url").value = getUrl(); $("pin").value = getPin(); refresh(); setInterval(refresh, 15000); })();
 </script>
 </body>
 </html>

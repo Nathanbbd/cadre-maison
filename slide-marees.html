@@ -318,23 +318,30 @@ function render() {
   if (!EXT.length) return;
   var now = new Date();
   renderTop(now); renderCurve(now); renderDays(now);
-  el("updated").innerHTML = DATA_URL ? "Données du " + hhmm(lastLoad) : "Données simulées (démo)";
+  el("updated").innerHTML = OFFLINE_T ? "⚠ Hors ligne · données du " + hhmm(new Date(OFFLINE_T)) : (DATA_URL ? "Données du " + hhmm(lastLoad) : "Données simulées (démo)");
 }
 
+var OFFLINE_T = 0;
+function cput(k, s) { try { localStorage.setItem("cad_" + k, '{"t":' + Date.now() + ',"s":' + JSON.stringify(s) + '}'); } catch (e) {} }
+function cget(k) { try { var r = localStorage.getItem("cad_" + k); return r ? JSON.parse(r) : null; } catch (e) { return null; } }
 function load() {
   if (!DATA_URL) { EXT = flatten(mockPayload()); lastLoad = new Date(); render(); return; }
   var xhr = new XMLHttpRequest();
   xhr.open("GET", DATA_URL);
   xhr.timeout = 15000;
-  function retry() { if (!EXT.length) setTimeout(load, 60000); }
+  function fb() {
+    var c = cget("mar_data");
+    if (c) { try { EXT = flatten(JSON.parse(c.s)); OFFLINE_T = c.t; render(); } catch (e) {} }
+    if (!EXT.length) setTimeout(load, 60000);
+  }
   xhr.onload = function () {
     if (xhr.status === 200) {
-      try { EXT = flatten(JSON.parse(xhr.responseText)); lastLoad = new Date(); render(); return; } catch (e) {}
+      try { cput("mar_data", xhr.responseText); EXT = flatten(JSON.parse(xhr.responseText)); OFFLINE_T = 0; lastLoad = new Date(); render(); return; } catch (e) {}
     }
-    retry();
+    fb();
   };
-  xhr.onerror = retry;
-  xhr.ontimeout = retry;
+  xhr.onerror = fb;
+  xhr.ontimeout = fb;
   xhr.send();
 }
 

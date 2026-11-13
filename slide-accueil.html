@@ -20,10 +20,24 @@
   html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; }
   body { font-family: "Barlow", "Roboto", "Helvetica Neue", Arial, sans-serif; color: var(--ink); }
   #stage { position: absolute; left: 0; top: 0; width: 1280px; height: 800px; background: var(--bg);
-           -webkit-transform-origin: 0 0; transform-origin: 0 0; }
+           -webkit-transform-origin: 0 0; transform-origin: 0 0;
+           display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; }
   .cond { font-family: "Barlow Condensed", "Roboto Condensed", "Arial Narrow", sans-serif; }
 
-  #grid { display: -webkit-flex; display: flex; padding: 44px 48px; -webkit-box-sizing: border-box; box-sizing: border-box; height: 800px; }
+  #grid { display: -webkit-flex; display: flex; padding: 44px 48px; -webkit-box-sizing: border-box; box-sizing: border-box; -webkit-flex: 1; flex: 1; min-height: 0; }
+
+  /* Bandeau "mot de la maison" (affiché seulement si un message existe) */
+  #noteBanner { display: none; padding: 16px 48px; background: var(--goldbg); border-bottom: 1px solid var(--line);
+                -webkit-align-items: center; align-items: center; -webkit-flex: none; flex: none; }
+  #noteBanner.on { display: -webkit-flex; display: flex; }
+  #noteBanner .nicon { width: 30px; height: 30px; margin-right: 16px; -webkit-flex: none; flex: none; }
+  #noteBanner .nicon path { fill: none; stroke: var(--gold); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  #noteBanner .ncol { min-width: 0; }
+  #noteBanner .nlbl { font-size: 14px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  #noteBanner .ntxt { font-size: 25px; font-weight: 600; color: var(--ink); margin-top: 1px;
+                      display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+  #offline { display: none; position: absolute; top: 18px; right: 22px; z-index: 6; background: rgba(240,170,60,0.18);
+             color: #e0901e; border: 1px solid rgba(224,144,30,0.55); border-radius: 12px; padding: 6px 13px; font-size: 16px; font-weight: 600; }
 
   /* Colonne gauche : salutation + météo */
   #left { width: 460px; -webkit-flex: none; flex: none; display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; margin-right: 26px; }
@@ -82,6 +96,11 @@
 </head>
 <body>
 <div id="stage">
+  <div id="noteBanner">
+    <svg class="nicon" viewBox="0 0 24 24"><path d="M5 4h14v11H9l-4 4z"/></svg>
+    <div class="ncol"><div class="nlbl">Mot de la maison</div><div class="ntxt" id="noteTxt"></div></div>
+  </div>
+  <div id="offline"></div>
   <div id="grid">
     <div id="left">
       <div id="hello"></div>
@@ -115,6 +134,7 @@
 var LAT = 47.1375, LON = -2.1876;
 var TIDES_URL = "https://maree.boisbourdinnathande.workers.dev/";
 var THERMO_URL = "";   /* Worker Tuya maison (vide = fausses valeurs) */
+var ADMIN_URL = "https://cadre-adminlpl.boisbourdinnathande.workers.dev";
 var REFRESH_MIN = 15;
 
 function el(id) { return document.getElementById(id); }
@@ -349,32 +369,38 @@ function rainHint(j) {
   }
   return "Pas de pluie prévue aujourd'hui";
 }
+var offWe = 0, offTi = 0;
+function offT() { return (offWe || offTi) ? Math.max(offWe, offTi) : 0; }
+function setOffline() { var ot = offT(), b = el("offline"); if (!b) return; if (ot) { b.textContent = "⚠ Hors ligne · maj " + hhmm(new Date(ot)); b.style.display = "block"; } else b.style.display = "none"; }
+function cput(k, s) { try { localStorage.setItem("cad_" + k, '{"t":' + Date.now() + ',"s":' + JSON.stringify(s) + '}'); } catch (e) {} }
+function cget(k) { try { var r = localStorage.getItem("cad_" + k); return r ? JSON.parse(r) : null; } catch (e) { return null; } }
+function jget(key, url, ok) {
+  var x = new XMLHttpRequest();
+  try { x.open("GET", url); } catch (e) {}
+  x.timeout = 12000;
+  function fb() { var c = cget(key); if (c) { try { ok(JSON.parse(c.s), true, c.t); } catch (e) {} } }
+  x.onload = function () { if (x.status === 200) { try { var d = JSON.parse(x.responseText); cput(key, x.responseText); ok(d, false, Date.now()); return; } catch (e) {} } fb(); };
+  x.onerror = fb; x.ontimeout = fb;
+  try { x.send(); } catch (e) { fb(); }
+}
 function loadWeather() {
   var url = "https://api.open-meteo.com/v1/forecast?latitude=" + LAT + "&longitude=" + LON +
     "&current=temperature_2m,apparent_temperature,weather_code,relative_humidity_2m,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,weather_code,precipitation_probability,precipitation" +
     "&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=Europe%2FParis&forecast_days=1";
-  var x = new XMLHttpRequest(); x.open("GET", url); x.timeout = 12000;
-  x.onload = function () {
-    if (x.status === 200) { try {
-      var j = JSON.parse(x.responseText), c = j.current, d = j.daily;
-      WX = { temp: c.temperature_2m, code: c.weather_code, feels: c.apparent_temperature, hum: c.relative_humidity_2m, wind: c.wind_speed_10m, wdir: c.wind_direction_10m, tmax: d.temperature_2m_max[0], tmin: d.temperature_2m_min[0], cols: buildCols(j), hint: rainHint(j) };
-      lastLoad = new Date(); render();
-    } catch (e) {} }
-  };
-  x.send();
+  jget("acc_weather", url, function (j, stale, t) {
+    var c = j.current, d = j.daily;
+    WX = { temp: c.temperature_2m, code: c.weather_code, feels: c.apparent_temperature, hum: c.relative_humidity_2m, wind: c.wind_speed_10m, wdir: c.wind_direction_10m, tmax: d.temperature_2m_max[0], tmin: d.temperature_2m_min[0], cols: buildCols(j), hint: rainHint(j) };
+    offWe = stale ? t : 0; lastLoad = new Date(); render(); setOffline();
+  });
 }
 function loadTides() {
   if (!TIDES_URL) return;
-  var x = new XMLHttpRequest(); x.open("GET", TIDES_URL); x.timeout = 12000;
-  x.onload = function () {
-    if (x.status === 200) { try {
-      var p = JSON.parse(x.responseText), out = [];
-      for (var i = 0; i < p.data.length; i++) { var day = p.data[i], dd = day.date.split("-"); for (var jx = 0; jx < day.extrema.length; jx++) { var e = day.extrema[jx], t = e.time.split(":"); out.push({ type: e.type, height: e.height, coef: e.coef, date: new Date(+dd[0], +dd[1] - 1, +dd[2], +t[0], +t[1]) }); } }
-      out.sort(function (a, b) { return a.date - b.date; });
-      TIDES = out; render();
-    } catch (e) {} }
-  };
-  x.send();
+  jget("acc_tides", TIDES_URL, function (p, stale, t) {
+    var out = [];
+    for (var i = 0; i < p.data.length; i++) { var day = p.data[i], dd = day.date.split("-"); for (var jx = 0; jx < day.extrema.length; jx++) { var e = day.extrema[jx], tt = e.time.split(":"); out.push({ type: e.type, height: e.height, coef: e.coef, date: new Date(+dd[0], +dd[1] - 1, +dd[2], +tt[0], +tt[1]) }); } }
+    out.sort(function (a, b) { return a.date - b.date; });
+    TIDES = out; offTi = stale ? t : 0; render(); setOffline();
+  });
 }
 function loadThermos() {
   if (!THERMO_URL) { TH = null; render(); return; }
@@ -382,7 +408,20 @@ function loadThermos() {
   x.onload = function () { if (x.status === 200) { try { TH = JSON.parse(x.responseText); render(); } catch (e) {} } };
   x.send();
 }
-function loadAll() { loadWeather(); loadTides(); loadThermos(); }
+function loadNote() {
+  if (!ADMIN_URL) return;
+  var x = new XMLHttpRequest(); x.open("GET", ADMIN_URL + "?t=" + Date.now()); x.timeout = 12000;
+  x.onload = function () {
+    if (x.status === 200) { try {
+      var note = (JSON.parse(x.responseText).note || "").trim();
+      var b = el("noteBanner");
+      if (note) { el("noteTxt").textContent = note; b.className = "on"; }
+      else { b.className = ""; }
+    } catch (e) {} }
+  };
+  x.send();
+}
+function loadAll() { loadWeather(); loadTides(); loadThermos(); loadNote(); }
 
 function fit() {
   var s = Math.min(window.innerWidth / 1280, window.innerHeight / 800), st = el("stage").style;
@@ -405,6 +444,7 @@ loadAll();
 function tick() { render(); setTimeout(tick, 60000 - (Date.now() % 60000) + 50); }
 setTimeout(tick, 60000 - (Date.now() % 60000) + 50);
 setInterval(loadAll, REFRESH_MIN * 60000);
+setInterval(loadNote, 60000);
 </script>
 </body>
 </html>
